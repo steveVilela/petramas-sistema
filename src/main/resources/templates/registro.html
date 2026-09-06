@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Reporte Diario - Petramás</title>
+</head>
+<body class="bg-light">
+
+<!-- Barra de Navegación Unificada Responsiva -->
+<nav class="navbar navbar-dark bg-primary shadow-sm py-3">
+    <div class="container-fluid flex-column align-items-start">
+        <span class="navbar-brand mb-2 h5 text-wrap fw-bold lh-sm">
+            Petramás | Registro de Actividades
+        </span>
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <!-- Usa usuarioActual que es la variable que tienes en tu formulario -->
+            <span class="text-white" th:text="'Usuario: ' + ${usuarioActual.nombreApellido}"></span>
+			<a th:href="@{/logout}" class="btn btn-light text-danger btn-sm fw-bold">Cerrar Sesión</a>        
+			</div>
+    </div>
+</nav>
+
+<div class="container mt-4 mb-5">
+    
+    <!-- Botón Volver Dinámico (Alineado con la tarjeta) -->
+    <div class="mb-3">
+        <a th:href="@{${rolUsuario == 'Administrador' ? '/admin' : '/dashboard'}}" 
+           class="btn btn-outline-secondary btn-sm fw-bold">← Volver a mi Panel</a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white text-center py-3">
+            <h5 class="mb-0 fw-bold">Reporte Diario</h5>
+        </div>
+        <div class="card-body p-4">
+            
+            <!-- Mensaje de éxito si se guardó correctamente -->
+            <div th:if="${param.exito}" class="alert alert-success text-center fw-bold">
+                ¡Reporte guardado correctamente!
+            </div>
+			<!-- Alerta de Error de Horas -->
+			<div th:if="${errorHoras}" class="alert alert-danger shadow-sm border-danger mb-4 fw-bold text-center">
+			    <span th:text="${errorHoras}"></span>
+			</div>
+
+            <!-- Formulario enlazado al objeto 'registro' de Spring -->
+            <form th:action="@{/reporte}" th:object="${registro}" method="post">
+                
+                <!-- Soldador (Autocompletado, Bloqueado y sin código duplicado) -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-secondary">Soldador:</label>
+                    <input type="text" class="form-control bg-light" th:value="${usuarioActual.nombreApellido}" readonly>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-secondary">Orden de Trabajo:</label>
+                    <select class="form-select" th:field="*{ordenTrabajo.idOrden}" required>
+                        <option value="">Seleccione la orden...</option>
+                        <option th:each="ord : ${ordenes}" th:value="${ord.idOrden}" th:text="${ord.idOrden + ' - ' + ord.equipo}"></option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-secondary">Fecha:</label>
+                    <input type="date" class="form-control" th:field="*{fecha}" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label class="form-label fw-bold text-secondary">Hora Inicio:</label>
+                        <input type="time" class="form-control" th:field="*{horaInicio}" required>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label fw-bold text-secondary">Hora Fin:</label>
+                        <input type="time" class="form-control" th:field="*{horaFin}" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-secondary">Actividad Realizada:</label>
+                    <textarea class="form-control" th:field="*{actividad}" rows="3" placeholder="Describa brevemente lo que hizo..." required></textarea>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold">Guardar Reporte</button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

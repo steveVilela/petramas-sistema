@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Reportes - Petramás</title>
+</head>
+<body class="bg-light">
+
+<!-- Barra de Navegación -->
+<nav class="navbar navbar-dark bg-primary shadow-sm py-3">
+    <div class="container-fluid flex-column align-items-start">
+        <span class="navbar-brand mb-2 h5 text-wrap fw-bold lh-sm">
+            Petramás | Reportes Gerenciales
+        </span>
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <span class="text-white" th:text="'Admin: ' + ${nombreAdmin}"></span>
+            <a th:href="@{/logout}" class="btn btn-light text-danger btn-sm fw-bold">Cerrar Sesión</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <!-- Botón Volver -->
+    <div class="mb-4">
+        <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm fw-bold">← Volver al Dashboard</a>
+    </div>
+
+    <!-- NUEVO: Filtro Global (Aplica para todo el mes) -->
+    <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 shadow-sm rounded border">
+        <div class="fw-bold text-dark fs-5">📅 Mes de Análisis</div>
+        <form th:action="@{/admin/reportes}" method="get" class="d-flex align-items-center m-0">
+            <input type="month" name="mes" class="form-control w-auto me-2" th:value="${mesSeleccionado}" required>
+            <button type="submit" class="btn btn-primary px-4">Aplicar Filtro</button>
+        </form>
+    </div>
+
+    <!-- NUEVO: Navegación de Pestañas -->
+    <ul class="nav nav-tabs mb-3" id="reportesTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold text-secondary" id="horas-tab" data-bs-toggle="tab" data-bs-target="#horas" type="button" role="tab">Consolidado de Horas</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-secondary" id="resumen-tab" data-bs-toggle="tab" data-bs-target="#resumen" type="button" role="tab">Resumen de Órdenes</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold text-secondary" id="detalle-tab" data-bs-toggle="tab" data-bs-target="#detalle" type="button" role="tab">Detalle de Intervenciones</button>
+        </li>
+    </ul>
+
+    <!-- Contenedor de las Tablas -->
+    <div class="tab-content" id="reportesTabsContent">
+        
+        <!-- PESTAÑA 1: HORAS -->
+        <div class="tab-pane fade show active" id="horas" role="tabpanel">
+            <div class="card shadow-sm border-0 border-top border-warning border-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 fw-bold text-dark">Total de Horas Trabajadas</h5>
+                    <button class="btn btn-sm btn-outline-success" onclick="window.print()">🖨️ Imprimir Horas</button>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover table-striped mb-0 text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-start ps-4">Operario (Nombre y Apellido)</th>
+                                <th>Total de Horas Acumuladas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="item : ${reporteHoras}">
+                                <td class="text-start ps-4 fw-bold text-secondary" th:text="${item.key}"></td>
+                                <td><span class="badge bg-primary fs-6" th:text="${item.value}"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA 2: RESUMEN DE ÓRDENES -->
+        <div class="tab-pane fade" id="resumen" role="tabpanel">
+            <div class="card shadow-sm border-0 border-top border-success border-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 fw-bold text-dark">Estado General de Órdenes</h5>
+                    <button class="btn btn-sm btn-outline-success" onclick="window.print()">🖨️ Imprimir Resumen</button>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover table-striped mb-0 text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Código de Orden</th>
+                                <th>Estado Actual</th>
+                                <th>Horas Invertidas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="fila : ${reporteOrdenes}">
+                                <td class="fw-bold text-secondary" th:text="${fila.codigo}"></td>
+                                <td>
+                                    <span class="badge" th:classappend="${fila.estado == 'Finalizado' ? 'bg-success' : 'bg-warning text-dark'}" th:text="${fila.estado}"></span>
+                                </td>
+                                <td><span class="badge bg-primary fs-6" th:text="${fila.tiempoTotal}"></span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+		<!-- PESTAÑA 3: DETALLE DE INTERVENCIONES -->
+		        <div class="tab-pane fade" id="detalle" role="tabpanel">
+		            <div class="card shadow-sm border-0 border-top border-info border-4">
+		                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+		                    <h5 class="mb-0 fw-bold text-dark">Auditoría de Personal por Orden</h5>
+		                    <button class="btn btn-sm btn-outline-success" onclick="window.print()">🖨️ Imprimir Detalle</button>
+		                </div>
+		                <div class="card-body p-0">
+		                    <table class="table table-hover table-bordered mb-0">
+		                        <thead class="table-light text-center">
+		                            <tr>
+		                                <th>Código</th>
+		                                <th>Personal Involucrado</th>
+		                                <th>Fechas de Trabajo</th>
+		                                <th>Total Horas</th> <!-- NUEVA COLUMNA -->
+		                            </tr>
+		                        </thead>
+		                        <tbody>
+		                            <tr th:each="fila : ${reporteOrdenes}">
+		                                <td class="fw-bold text-center align-middle" th:text="${fila.codigo}"></td>
+		                                <td class="align-middle" th:text="${fila.trabajadores}"></td>
+		                                <td class="align-middle" th:text="${fila.fechas}"></td>
+		                                <!-- NUEVO DATO A MOSTRAR -->
+		                                <td class="text-center align-middle">
+		                                    <span class="badge bg-info text-dark fs-6" th:text="${fila.tiempoTotal}"></span>
+		                                </td>
+		                            </tr>
+		                        </tbody>
+		                    </table>
+		                </div>
+		            </div>
+		        </div>
+    </div> <!-- Fin Tab Content -->
+</div> <!-- Fin Container --
+	<!-- Motor de Bootstrap para que funcionen las pestañas -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
