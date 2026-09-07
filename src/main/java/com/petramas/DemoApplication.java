@@ -2,6 +2,10 @@ package com.petramas;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.petramas.model.Operario;
+import com.petramas.repository.OperarioRepository;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
 public class DemoApplication {
@@ -10,17 +14,17 @@ public class DemoApplication {
 		SpringApplication.run(DemoApplication.class, args);
 	}
 
-	@org.springframework.context.annotation.Bean
-	public org.springframework.boot.CommandLineRunner initData(com.petramas.repository.OperarioRepository repo) {
+	@Bean
+	public CommandLineRunner initData(OperarioRepository repo) {
 		return args -> {
 			// Si la base de datos está totalmente vacía, creamos el primer admin
 			if (repo.count() == 0) {
-				com.petramas.model.Operario admin = new com.petramas.model.Operario();
+				Operario admin = new Operario();
 				admin.setDni("admin"); // Usuario para entrar
 				admin.setClave("12345"); // Contraseña para entrar
 				admin.setNombreApellido("Administrador Maestro");
 				admin.setEspecialidad("Sistemas");
-				admin.setEstado("Administrador"); // Asumo que así diferencias a los admins
+				admin.setEstado("Administrador");
 				
 				repo.save(admin);
 				System.out.println("¡Base de datos inicializada! Administrador creado: admin / 12345");

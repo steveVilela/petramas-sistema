@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: petramas-app
-    env: native
-    buildCommand: "mvn clean package -DskipTests"
-    startCommand: "java -jar target/*.jar"
