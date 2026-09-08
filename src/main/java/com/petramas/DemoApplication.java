@@ -23,8 +23,8 @@ public class DemoApplication {
 				admin.setDni("admin"); // Usuario para entrar
 				admin.setClave("12345"); // Contraseña para entrar
 				admin.setNombreApellido("Administrador Maestro");
-				admin.setEspecialidad("Sistemas");
-				admin.setEstado("Administrador");
+				admin.setEspecialidad("Administrador");
+				admin.setEstado("Activo");
 				
 				repo.save(admin);
 				System.out.println("¡Base de datos inicializada! Administrador creado: admin / 12345");
