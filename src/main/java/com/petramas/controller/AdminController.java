@@ -146,22 +146,28 @@ public class AdminController {
     }
 
     @PostMapping("/guardarOrden")
-    public String guardarOrden(OrdenTrabajo orden, HttpSession session) {
-    	// CAMBIO AQUÍ: Usamos la nueva regla
-        if (!tieneAccesoAOrdenes(session)) return "redirect:/"; 
-        
-        
-        // REGLAS DE NEGOCIO AUTOMÁTICAS
-        if (orden.getFechaCreacion() == null) {
-            orden.setFechaCreacion(java.time.LocalDate.now()); // Fecha de hoy
-        }
-        if (orden.getEstado() == null || orden.getEstado().isEmpty()) {
-            orden.setEstado("Pendiente"); // Estado por defecto
-        }
-        
-        ordenTrabajoRepo.save(orden);
-        return "redirect:/admin/ordenes?exito";
+public String guardarOrden(OrdenTrabajo orden, HttpSession session) {
+    if (!tieneAccesoAOrdenes(session)) return "redirect:/"; 
+    
+    // Validamos si la orden ya existe por su ID
+    // (Asumimos que si es un registro nuevo, el ID no debería estar repetido)
+    if (ordenTrabajoRepo.existsById(orden.getIdOrden())) {
+        // Redirigimos a la misma vista pero con una alerta de error
+        return "redirect:/admin/ordenes?errorDuplicado";
     }
+    
+    // REGLAS DE NEGOCIO AUTOMÁTICAS
+    if (orden.getFechaCreacion() == null) {
+        orden.setFechaCreacion(java.time.LocalDate.now()); // Fecha de hoy
+    }
+    if (orden.getEstado() == null || orden.getEstado().isEmpty()) {
+        orden.setEstado("Pendiente"); // Estado por defecto
+    }
+    
+    ordenTrabajoRepo.save(orden);
+    return "redirect:/admin/ordenes?exito";
+}
+
     
  // === NUEVO MÉTODO: Finalizar Orden ===
     @GetMapping("/finalizarOrden/{idOrden}")
