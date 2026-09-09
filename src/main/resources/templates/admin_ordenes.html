@@ -57,6 +57,13 @@
                             <label class="form-label fw-bold">N° de Orden</label>
                             <input type="text" class="form-control" th:field="*{idOrden}" required placeholder="Ej: 2100189507">
                         </div>
+
+						<div class="mb-3">
+    <label class="form-label fw-bold">Fecha de Emisión</label>
+    <input type="date" class="form-control" th:field="*{fechaCreacion}">
+    <div class="form-text">Si se deja vacío, se asignará la fecha de hoy automáticamente.</div>
+</div>
+
                         <div class="mb-3">
                             <label class="form-label fw-bold">Equipo / Maquinaria</label>
                             <input type="text" class="form-control" th:field="*{equipo}" required placeholder="Ej: C-282 COMPACTA SHACMAN">
