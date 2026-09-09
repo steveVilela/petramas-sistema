@@ -149,17 +149,17 @@ public class AdminController {
 public String guardarOrden(OrdenTrabajo orden, HttpSession session) {
     if (!tieneAccesoAOrdenes(session)) return "redirect:/"; 
     
-    // Validamos si la orden ya existe por su ID
-    // (Asumimos que si es un registro nuevo, el ID no debería estar repetido)
+    // Verificamos si la orden ya existe por su ID para evitar sobrescribir
     if (ordenTrabajoRepo.existsById(orden.getIdOrden())) {
-        // Redirigimos a la misma vista pero con una alerta de error
         return "redirect:/admin/ordenes?errorDuplicado";
     }
     
-    // REGLAS DE NEGOCIO AUTOMÁTICAS
+    // REGLAS DE NEGOCIO: Si no se eligió fecha, por defecto ponemos la de hoy. 
+    // Si el usuario eligió una fecha pasada en el formulario, se respeta esa.
     if (orden.getFechaCreacion() == null) {
-        orden.setFechaCreacion(java.time.LocalDate.now()); // Fecha de hoy
+        orden.setFechaCreacion(java.time.LocalDate.now());
     }
+    
     if (orden.getEstado() == null || orden.getEstado().isEmpty()) {
         orden.setEstado("Pendiente"); // Estado por defecto
     }
