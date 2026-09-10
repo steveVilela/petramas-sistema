@@ -60,12 +60,22 @@
 	                    <td class="small lh-sm text-wrap" th:text="${reg.actividad}"></td>
 						<!-- Debajo del td de Actividad... -->
 						    <td class="text-center">
-						        <a th:href="@{/reporte/eliminar/{id}(id=${reg.idRegistro})}" 
-						           class="btn btn-outline-danger btn-sm px-2 py-0" 
-						           onclick="return confirm('¿Seguro que deseas eliminar este registro histórico?');">
-						            X
-						        </a>
-						    </td>
+    <div class="d-flex justify-content-center gap-1">
+        <!-- Botón Modificar -->
+        <a th:href="@{/reporte/editar/{id}(id=${reg.idRegistro})}" 
+           class="btn btn-outline-primary btn-sm px-2 py-0 fw-bold">
+            ✏️
+        </a>
+        
+        <!-- Botón Eliminar existente -->
+        <a th:href="@{/reporte/eliminar/{id}(id=${reg.idRegistro})}" 
+           class="btn btn-outline-danger btn-sm px-2 py-0 fw-bold" 
+           onclick="return confirm('¿Seguro que deseas eliminar este registro histórico?');">
+            X
+        </a>
+    </div>
+</td>
+
 					
 					</tr>
 	            </tbody>
