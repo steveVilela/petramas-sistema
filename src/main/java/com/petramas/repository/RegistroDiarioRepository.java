@@ -1,4 +1,5 @@
 package com.petramas.repository;
+import java.time.LocalTime;
 
 import java.time.LocalDate;
 import java.util.List;
