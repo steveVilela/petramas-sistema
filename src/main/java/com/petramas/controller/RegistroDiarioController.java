@@ -1,10 +1,10 @@
 package com.petramas.controller;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import com.petramas.model.Operario;
@@ -26,7 +26,7 @@ public class RegistroDiarioController {
     @GetMapping("/reporte")
     public String mostrarFormulario(HttpSession session, Model model) {
         Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
-        if (usuario == null) return "redirect:/"; // Candado de seguridad
+        if (usuario == null) return "redirect:/";
 
         model.addAttribute("registro", new RegistroDiario());
         model.addAttribute("ordenes", ordenRepo.findByEstado("Pendiente"));
@@ -36,37 +36,22 @@ public class RegistroDiarioController {
         return "registro"; 
     }
 
-    @PostMapping("/reporte")
-    public String guardarReporte(RegistroDiario registro, HttpSession session, RedirectAttributes redirectAttributes) {
+    @GetMapping("/reporte/editar/{id}")
+    public String editarReporte(@PathVariable("id") Integer id, HttpSession session, Model model) {
         Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
         if (usuario == null) return "redirect:/";
-        
-        // 1. VALIDACIÓN: Hora Fin debe ser mayor a Hora Inicio
-        if (registro.getHoraInicio() != null && registro.getHoraFin() != null) {
-            if (registro.getHoraFin().isBefore(registro.getHoraInicio()) || registro.getHoraFin().equals(registro.getHoraInicio())) {
-                redirectAttributes.addFlashAttribute("errorHoras", "⚠️ La hora de fin debe ser mayor a la hora de inicio (revisa si es AM o PM).");
-                return "redirect:/reporte";
-            }
-        }
-        
-        registro.setOperario(usuario);
 
-        // 2. CANDADO ANTI-DOBLE CLIC / LAG: Evita que se guarden registros idénticos repetidos
-        boolean yaExiste = registroRepo.existsByOperarioAndFechaAndHoraInicioAndHoraFin(
-            usuario, registro.getFecha(), registro.getHoraInicio(), registro.getHoraFin()
-        );
-
-        if (yaExiste) {
+        RegistroDiario registroAEditar = registroRepo.findById(id).orElse(null);
+        
+        if (registroAEditar == null || !registroAEditar.getOperario().getDni().equals(usuario.getDni())) {
             return "redirect:/dashboard";
         }
-        
-        // Si todo está correcto, guardamos una sola vez
-        registroRepo.save(registro);
-        
-        return "redirect:/dashboard"; 
-    }
-}
+
+        model.addAttribute("registro", registroAEditar);
+        model.addAttribute("ordenes", ordenRepo.findByEstado("Pendiente"));
+        model.addAttribute("usuarioActual", usuario);
         model.addAttribute("rolUsuario", usuario.getEspecialidad());
+        model.addAttribute("modoEdicion", true);
         
         return "registro"; 
     }
@@ -76,23 +61,27 @@ public class RegistroDiarioController {
         Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
         if (usuario == null) return "redirect:/";
         
-        // ==========================================
-        // VALIDACIÓN: Hora Fin debe ser mayor a Hora Inicio
-        // ==========================================
         if (registro.getHoraInicio() != null && registro.getHoraFin() != null) {
             if (registro.getHoraFin().isBefore(registro.getHoraInicio()) || registro.getHoraFin().equals(registro.getHoraInicio())) {
-                
-                // Enviamos el mensaje de error y lo regresamos al formulario
                 redirectAttributes.addFlashAttribute("errorHoras", "⚠️ La hora de fin debe ser mayor a la hora de inicio (revisa si es AM o PM).");
                 return "redirect:/reporte";
             }
         }
         
-        // Si todo está correcto, asignamos el usuario y guardamos
         registro.setOperario(usuario);
+
+        if (registro.getIdRegistro() == null) {
+            boolean yaExiste = registroRepo.existsByOperarioAndFechaAndHoraInicioAndHoraFin(
+                usuario, registro.getFecha(), registro.getHoraInicio(), registro.getHoraFin()
+            );
+
+            if (yaExiste) {
+                return "redirect:/dashboard";
+            }
+        }
+        
         registroRepo.save(registro);
         
-        // Yo te sugeriría que al registrar con éxito, lo devuelva al Dashboard para que vea su tabla actualizada
         return "redirect:/dashboard"; 
     }
 }
