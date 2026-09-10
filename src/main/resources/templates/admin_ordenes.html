@@ -46,39 +46,38 @@
 
     <div class="row">
         <!-- FORMULARIO -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm border-success">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">Generar Nueva Orden</h5>
-                </div>
-                <div class="card-body">
-                    <form th:action="@{/admin/guardarOrden}" th:object="${nuevaOrden}" method="post">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">N° de Orden</label>
-                            <input type="text" class="form-control" th:field="*{idOrden}" required placeholder="Ej: 2100189507">
-                        </div>
-
-						<div class="mb-3">
-    <label class="form-label fw-bold">Fecha de Emisión</label>
-    <input type="date" class="form-control" th:field="*{fechaCreacion}">
-    <div class="form-text">Si se deja vacío, se asignará la fecha de hoy automáticamente.</div>
+        <!-- CAMBIO EN EL FORMULARIO -->
+<div class="card shadow-sm border-success">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0" th:text="${modoEdicion} ? 'Editar Orden de Trabajo' : 'Generar Nueva Orden'">Generar Nueva Orden</h5>
+    </div>
+    <div class="card-body">
+        <form th:action="@{/admin/guardarOrden}" th:object="${nuevaOrden}" method="post">
+            <div class="mb-3">
+                <label class="form-label fw-bold">N° de Orden</label>
+                <!-- Si estamos editando, el ID no se debe cambiar para evitar duplicados -->
+                <input type="text" class="form-control" th:field="*{idOrden}" required th:readonly="${modoEdicion}" placeholder="Ej: 2100189507">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Fecha de Emisión</label>
+                <input type="date" class="form-control" th:field="*{fechaCreacion}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Equipo / Maquinaria</label>
+                <input type="text" class="form-control" th:field="*{equipo}" required placeholder="Ej: C-282 COMPACTA SHACMAN">
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold">Descripción del Trabajo</label>
+                <textarea class="form-control" th:field="*{descripcion}" rows="3" required placeholder="Sintoma de avería o tarea requerida..."></textarea>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-success fw-bold" th:text="${modoEdicion} ? 'Actualizar Orden' : 'Emitir Orden'">Emitir Orden</button>
+                <a th:if="${modoEdicion}" th:href="@{/admin/ordenes}" class="btn btn-outline-secondary fw-bold">Cancelar Edición</a>
+            </div>
+        </form>
+    </div>
 </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Equipo / Maquinaria</label>
-                            <input type="text" class="form-control" th:field="*{equipo}" required placeholder="Ej: C-282 COMPACTA SHACMAN">
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Descripción del Trabajo</label>
-                            <textarea class="form-control" th:field="*{descripcion}" rows="3" required placeholder="Sintoma de avería o tarea requerida..."></textarea>
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-success fw-bold">Emitir Orden</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
 
         <!-- TABLA -->
         <div class="col-md-8">
