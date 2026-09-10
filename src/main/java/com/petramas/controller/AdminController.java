@@ -145,28 +145,54 @@ public class AdminController {
         return "admin_ordenes"; 
     }
 
+    // === NUEVO MÉTODO: Carga los datos de la orden para editarlos ===
+    @GetMapping("/editarOrden/{idOrden}")
+    public String editarOrden(@PathVariable("idOrden") String idOrden, HttpSession session, Model model) {
+        if (!tieneAccesoAOrdenes(session)) return "redirect:/"; 
+
+        Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
+        model.addAttribute("nombreAdmin", usuario.getNombreApellido());
+        model.addAttribute("rolUsuario", usuario.getEspecialidad());
+
+        OrdenTrabajo ordenAEditar = ordenTrabajoRepo.findById(idOrden).orElse(new OrdenTrabajo());
+        model.addAttribute("nuevaOrden", ordenAEditar);
+        model.addAttribute("modoEdicion", true); // Bandera para el formulario
+        model.addAttribute("listaOrdenes", ordenTrabajoRepo.findAll());
+        
+        return "admin_ordenes"; 
+    }
+
+    // === MÉTODO ACTUALIZADO: Permite guardar nuevo o actualizar si ya existe ===
     @PostMapping("/guardarOrden")
-public String guardarOrden(OrdenTrabajo orden, HttpSession session) {
-    if (!tieneAccesoAOrdenes(session)) return "redirect:/"; 
-    
-    // Verificamos si la orden ya existe por su ID para evitar sobrescribir
-    if (ordenTrabajoRepo.existsById(orden.getIdOrden())) {
-        return "redirect:/admin/ordenes?errorDuplicado";
+    public String guardarOrden(OrdenTrabajo orden, HttpSession session) {
+        if (!tieneAccesoAOrdenes(session)) return "redirect:/"; 
+        
+        if (ordenTrabajoRepo.existsById(orden.getIdOrden())) {
+            // Es una EDICIÓN: Conservamos los datos que no cambian si es necesario
+            OrdenTrabajo existente = ordenTrabajoRepo.findById(orden.getIdOrden()).get();
+            if (orden.getFechaCreacion() == null) {
+                orden.setFechaCreacion(existente.getFechaCreacion());
+            }
+            if (orden.getEstado() == null || orden.getEstado().isEmpty()) {
+                orden.setEstado(existente.getEstado());
+            }
+            if (orden.getFechaFinalizacion() == null) {
+                orden.setFechaFinalizacion(existente.getFechaFinalizacion());
+            }
+        } else {
+            // Es NUEVO
+            if (orden.getFechaCreacion() == null) {
+                orden.setFechaCreacion(java.time.LocalDate.now());
+            }
+            if (orden.getEstado() == null || orden.getEstado().isEmpty()) {
+                orden.setEstado("Pendiente");
+            }
+        }
+        
+        ordenTrabajoRepo.save(orden);
+        return "redirect:/admin/ordenes?exito";
     }
-    
-    // REGLAS DE NEGOCIO: Si no se eligió fecha, por defecto ponemos la de hoy. 
-    // Si el usuario eligió una fecha pasada en el formulario, se respeta esa.
-    if (orden.getFechaCreacion() == null) {
-        orden.setFechaCreacion(java.time.LocalDate.now());
-    }
-    
-    if (orden.getEstado() == null || orden.getEstado().isEmpty()) {
-        orden.setEstado("Pendiente"); // Estado por defecto
-    }
-    
-    ordenTrabajoRepo.save(orden);
-    return "redirect:/admin/ordenes?exito";
-}
+
 
     
  // === NUEVO MÉTODO: Finalizar Orden ===
