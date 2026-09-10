@@ -46,47 +46,53 @@
 			</div>
 
             <!-- Formulario enlazado al objeto 'registro' de Spring -->
-            <form th:action="@{/reporte}" th:object="${registro}" method="post">
-                
-                <!-- Soldador (Autocompletado, Bloqueado y sin código duplicado) -->
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-secondary">Soldador:</label>
-                    <input type="text" class="form-control bg-light" th:value="${usuarioActual.nombreApellido}" readonly>
-                </div>
+            <!-- Formulario enlazado al objeto 'registro' de Spring -->
+<form th:action="@{/reporte}" th:object="${registro}" method="post">
+    
+    <!-- CAMPO OCULTO: Vital para que Spring sepa que estamos actualizando y no creando uno nuevo -->
+    <input type="hidden" th:field="*{idRegistro}">
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-secondary">Orden de Trabajo:</label>
-                    <select class="form-select" th:field="*{ordenTrabajo.idOrden}" required>
-                        <option value="">Seleccione la orden...</option>
-                        <option th:each="ord : ${ordenes}" th:value="${ord.idOrden}" th:text="${ord.idOrden + ' - ' + ord.equipo}"></option>
-                    </select>
-                </div>
+    <!-- Soldador -->
+    <div class="mb-3">
+        <label class="form-label fw-bold text-secondary">Soldador:</label>
+        <input type="text" class="form-control bg-light" th:value="${usuarioActual.nombreApellido}" readonly>
+    </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold text-secondary">Fecha:</label>
-                    <input type="date" class="form-control" th:field="*{fecha}" required>
-                </div>
+    <div class="mb-3">
+        <label class="form-label fw-bold text-secondary">Orden de Trabajo:</label>
+        <select class="form-select" th:field="*{ordenTrabajo.idOrden}" required>
+            <option value="">Seleccione la orden...</option>
+            <option th:each="ord : ${ordenes}" th:value="${ord.idOrden}" th:text="${ord.idOrden + ' - ' + ord.equipo}"></option>
+        </select>
+    </div>
 
-                <div class="row">
-                    <div class="col-6 mb-3">
-                        <label class="form-label fw-bold text-secondary">Hora Inicio:</label>
-                        <input type="time" class="form-control" th:field="*{horaInicio}" required>
-                    </div>
-                    <div class="col-6 mb-3">
-                        <label class="form-label fw-bold text-secondary">Hora Fin:</label>
-                        <input type="time" class="form-control" th:field="*{horaFin}" required>
-                    </div>
-                </div>
+    <div class="mb-3">
+        <label class="form-label fw-bold text-secondary">Fecha:</label>
+        <input type="date" class="form-control" th:field="*{fecha}" required>
+    </div>
 
-                <div class="mb-4">
-                    <label class="form-label fw-bold text-secondary">Actividad Realizada:</label>
-                    <textarea class="form-control" th:field="*{actividad}" rows="3" placeholder="Describa brevemente lo que hizo..." required></textarea>
-                </div>
+    <div class="row">
+        <div class="col-6 mb-3">
+            <label class="form-label fw-bold text-secondary">Hora Inicio:</label>
+            <input type="time" class="form-control" th:field="*{horaInicio}" required>
+        </div>
+        <div class="col-6 mb-3">
+            <label class="form-label fw-bold text-secondary">Hora Fin:</label>
+            <input type="time" class="form-control" th:field="*{horaFin}" required>
+        </div>
+    </div>
 
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-primary btn-lg fw-bold">Guardar Reporte</button>
-                </div>
-            </form>
+    <div class="mb-4">
+        <label class="form-label fw-bold text-secondary">Actividad Realizada:</label>
+        <textarea class="form-control" th:field="*{actividad}" rows="3" placeholder="Describa brevemente lo que hizo..." required></textarea>
+    </div>
+
+    <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary btn-lg fw-bold" th:text="${modoEdicion} ? 'Actualizar Reporte' : 'Guardar Reporte'">Guardar Reporte</button>
+        <a th:if="${modoEdicion}" th:href="@{/dashboard}" class="btn btn-outline-secondary fw-bold">Cancelar</a>
+    </div>
+</form>
+
             
         </div>
     </div>
