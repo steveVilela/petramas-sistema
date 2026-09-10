@@ -28,12 +28,43 @@ public class RegistroDiarioController {
         if (usuario == null) return "redirect:/"; // Candado de seguridad
 
         model.addAttribute("registro", new RegistroDiario());
-        
-        // ¡Magia! Solo enviamos a la lista desplegable las que dicen "Pendiente"
         model.addAttribute("ordenes", ordenRepo.findByEstado("Pendiente"));
-        
-        // Enviamos los datos del usuario para pintar su nombre y el botón volver
         model.addAttribute("usuarioActual", usuario);
+        model.addAttribute("rolUsuario", usuario.getEspecialidad());
+        
+        return "registro"; 
+    }
+
+    @PostMapping("/reporte")
+    public String guardarReporte(RegistroDiario registro, HttpSession session, RedirectAttributes redirectAttributes) {
+        Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
+        if (usuario == null) return "redirect:/";
+        
+        // 1. VALIDACIÓN: Hora Fin debe ser mayor a Hora Inicio
+        if (registro.getHoraInicio() != null && registro.getHoraFin() != null) {
+            if (registro.getHoraFin().isBefore(registro.getHoraInicio()) || registro.getHoraFin().equals(registro.getHoraInicio())) {
+                redirectAttributes.addFlashAttribute("errorHoras", "⚠️ La hora de fin debe ser mayor a la hora de inicio (revisa si es AM o PM).");
+                return "redirect:/reporte";
+            }
+        }
+        
+        registro.setOperario(usuario);
+
+        // 2. CANDADO ANTI-DOBLE CLIC / LAG: Evita que se guarden registros idénticos repetidos
+        boolean yaExiste = registroRepo.existsByOperarioAndFechaAndHoraInicioAndHoraFin(
+            usuario, registro.getFecha(), registro.getHoraInicio(), registro.getHoraFin()
+        );
+
+        if (yaExiste) {
+            return "redirect:/dashboard";
+        }
+        
+        // Si todo está correcto, guardamos una sola vez
+        registroRepo.save(registro);
+        
+        return "redirect:/dashboard"; 
+    }
+}
         model.addAttribute("rolUsuario", usuario.getEspecialidad());
         
         return "registro"; 
