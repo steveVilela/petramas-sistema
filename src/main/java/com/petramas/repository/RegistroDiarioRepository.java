@@ -19,4 +19,9 @@ public interface RegistroDiarioRepository extends JpaRepository<RegistroDiario, 
 
  // Trae todos los registros de todos los operarios en un rango de fechas
     List<RegistroDiario> findByFechaBetween(java.time.LocalDate inicio, java.time.LocalDate fin);
+
+    // Agrega esta línea para que el repositorio reconozca el método anti-duplicados
+    boolean existsByOperarioAndFechaAndHoraInicioAndHoraFin(
+        Operario operario, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin
+    );
 } 
