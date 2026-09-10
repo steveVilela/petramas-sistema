@@ -101,34 +101,41 @@
 							                            </thead>
 							                            <tbody>
 							                                <tr th:each="orden : ${listaOrdenes}">
-							                                    <td class="fw-bold" th:text="${orden.idOrden}"></td>
-							                                    <td th:text="${orden.equipo}"></td>
-							                                    <td th:text="${orden.descripcion}"></td>
-							                                    
-							                                    <!-- Muestra ambas fechas -->
-							                                    <td>
-							                                        <div th:text="'Emisión: ' + (${orden.fechaCreacion != null ? orden.fechaCreacion : 'N/A'})"></div>
-							                                        <div class="text-success fw-bold" th:if="${orden.fechaFinalizacion != null}" th:text="'Cierre: ' + ${orden.fechaFinalizacion}"></div>
-							                                    </td>
+    <td class="fw-bold" th:text="${orden.idOrden}"></td>
+    <td th:text="${orden.equipo}"></td>
+    <td th:text="${orden.descripcion}"></td>
+    
+    <!-- Muestra ambas fechas -->
+    <td>
+        <div th:text="'Emisión: ' + (${orden.fechaCreacion != null ? orden.fechaCreacion : 'N/A'})"></div>
+        <div class="text-success fw-bold" th:if="${orden.fechaFinalizacion != null}" th:text="'Cierre: ' + ${orden.fechaFinalizacion}"></div>
+    </td>
 
-							                                    <td class="text-center">
-							                                        <span class="badge" 
-							                                              th:classappend="${orden.estado == 'Pendiente' ? 'bg-warning text-dark' : 'bg-primary'}"
-							                                              th:text="${orden.estado}"></span>
-							                                    </td>
-							                                    
-							                                    <td class="text-center">
-							                                        <!-- Botón de Finalizar (Solo aparece si está Pendiente) -->
-							                                        <a th:if="${orden.estado == 'Pendiente'}" 
-							                                           th:href="@{/admin/finalizarOrden/{id}(id=${orden.idOrden})}" 
-							                                           class="btn btn-warning btn-sm fw-bold text-dark"
-							                                           onclick="return confirm('¿Marcar esta orden como FINALIZADA?');">
-							                                           Finalizar
-							                                        </a>
-							                                        <!-- Botoncito que aparece cuando ya está terminada -->
-							                                        <span th:if="${orden.estado == 'Finalizado'}" class="badge bg-success">✔ Listo</span>
-							                                    </td>
-							                                </tr>
+    <td class="text-center">
+        <span class="badge" 
+              th:classappend="${orden.estado == 'Pendiente' ? 'bg-warning text-dark' : 'bg-primary'}"
+              th:text="${orden.estado}"></span>
+    </td>
+    
+    <!-- Columna única de Acciones limpia -->
+    <td class="text-center">
+        <!-- Botón de Editar -->
+        <a th:href="@{/admin/editarOrden/{id}(id=${orden.idOrden})}" 
+           class="btn btn-primary btn-sm fw-bold me-1">Editar</a>
+
+        <!-- Botón de Finalizar (Solo si está Pendiente) -->
+        <a th:if="${orden.estado == 'Pendiente'}" 
+           th:href="@{/admin/finalizarOrden/{id}(id=${orden.idOrden})}" 
+           class="btn btn-warning btn-sm fw-bold text-dark"
+           onclick="return confirm('¿Marcar esta orden como FINALIZADA?');">
+           Finalizar
+        </a>
+        
+        <!-- Etiqueta cuando ya está terminada -->
+        <span th:if="${orden.estado == 'Finalizado'}" class="badge bg-success">✔ Listo</span>
+    </td>
+</tr>
+
 							                            </tbody>
                         </table>
                     </div>
