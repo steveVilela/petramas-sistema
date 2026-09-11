@@ -50,11 +50,13 @@
 	                    <!-- 1. Fecha: text-nowrap evita que el año se separe del mes -->
 	                    <td class="text-nowrap text-center fw-bold small" th:text="${reg.fecha}"></td>
 	                    
-	                    <!-- 2. Orden y Horario: Apilados uno sobre otro en la misma celda -->
+	                     <!-- 2. Orden, Equipo y Horario: Apilados en la misma celda -->
 	                    <td class="text-nowrap">
 	                        <span class="badge bg-success mb-1" th:text="${reg.ordenTrabajo.idOrden}"></span><br>
-	                        <small class="text-muted fw-bold" th:text="${reg.horaInicio + ' - ' + reg.horaFin}"></small>
+	                        <small class="text-dark fw-bold d-block text-truncate" style="max-width: 150px;" th:text="${reg.ordenTrabajo.equipo}"></small>
+	                        <small class="text-muted" th:text="${reg.horaInicio + ' - ' + reg.horaFin}"></small>
 	                    </td>
+
 	                    
 	                    <!-- 3. Actividad: Letra más pequeña para que quepa mejor el texto -->
 	                    <td class="small lh-sm text-wrap" th:text="${reg.actividad}"></td>
