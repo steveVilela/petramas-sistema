@@ -49,7 +49,7 @@ public class RegistroDiario {
         if (horaInicio != null && horaFin != null) {
             long minutosTotales = Duration.between(horaInicio, horaFin).toMinutes();
             double horasBrutas = minutosTotales / 60.0;
-            if (horasBrutas > 6.0) {
+            if (horasBrutas > 5.0) {
                 return horasBrutas - 1.0;
             }
             return horasBrutas;
