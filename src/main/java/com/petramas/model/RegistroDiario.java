@@ -44,15 +44,11 @@ public class RegistroDiario {
     @Column(name = "actividad", nullable = false, columnDefinition = "TEXT")
     private String actividad;
 
-    // Método para descontar refrigerio automáticamente si pasa de 6 horas
+    // Calcula únicamente las horas brutas de este bloque específico
     public double getHorasTrabajadas() {
         if (horaInicio != null && horaFin != null) {
             long minutosTotales = Duration.between(horaInicio, horaFin).toMinutes();
-            double horasBrutas = minutosTotales / 60.0;
-            if (horasBrutas > 5.0) {
-                return horasBrutas - 1.0;
-            }
-            return horasBrutas;
+            return minutosTotales / 60.0;
         }
         return 0.0;
     }
