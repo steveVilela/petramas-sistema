@@ -25,4 +25,7 @@ public interface RegistroDiarioRepository extends JpaRepository<RegistroDiario, 
     boolean existsByOperarioAndFechaAndHoraInicioAndHoraFin(
         Operario operario, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin
     );
+
+    List<RegistroDiario> findByOperarioAndFechaOrderByHoraInicioAsc(Operario operario, LocalDate fecha);
+
 } 
