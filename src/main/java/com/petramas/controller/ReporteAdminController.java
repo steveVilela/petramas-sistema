@@ -26,8 +26,29 @@ public class ReporteAdminController {
         return usuario != null && "Administrador".equalsIgnoreCase(usuario.getEspecialidad());
     }
 
+    // === MÉTODO AUXILIAR: Cálculo de horas netas descontando refrigerio fijo (12:30 - 13:30) ===
+    private long calcularMinutosNetos(java.time.LocalTime inicio, java.time.LocalTime fin) {
+        if (inicio == null || fin == null) return 0;
+        
+        long minutosBrutos = java.time.Duration.between(inicio, fin).toMinutes();
+        if (minutosBrutos <= 0) return 0;
+
+        java.time.LocalTime inicioRefri = java.time.LocalTime.of(12, 30);
+        java.time.LocalTime finRefri = java.time.LocalTime.of(13, 30);
+
+        long minutosRefrigerio = 0;
+        
+        // Si el bloque de trabajo abarca o cruza la hora de almuerzo
+        if (inicio.isBefore(finRefri) && fin.isAfter(inicioRefri)) {
+            java.time.LocalTime maxInicio = inicio.isAfter(inicioRefri) ? inicio : inicioRefri;
+            java.time.LocalTime minFin = fin.isBefore(finRefri) ? fin : finRefri;
+            minutosRefrigerio = java.time.Duration.between(maxInicio, minFin).toMinutes();
+        }
+
+        return minutosBrutos - minutosRefrigerio;
+    }
+
     // === PANTALLA PRINCIPAL DE REPORTES ===
- // === PANTALLA PRINCIPAL DE REPORTES ===
     @GetMapping
     public String mostrarReportes(
             @org.springframework.web.bind.annotation.RequestParam(value = "mes", required = false) String mesParam,
@@ -38,12 +59,12 @@ public class ReporteAdminController {
         Operario admin = (Operario) session.getAttribute("usuarioLogueado");
         model.addAttribute("nombreAdmin", admin.getNombreApellido());
 
-        // 1. Determinar el mes a consultar (Usamos YearMonth para manejar el formato "YYYY-MM")
+        // 1. Determinar el mes a consultar
         java.time.YearMonth mesSeleccionado;
         if (mesParam != null && !mesParam.isEmpty()) {
-            mesSeleccionado = java.time.YearMonth.parse(mesParam); // Si el usuario eligió un mes
+            mesSeleccionado = java.time.YearMonth.parse(mesParam);
         } else {
-            mesSeleccionado = java.time.YearMonth.now(); // Por defecto el mes actual
+            mesSeleccionado = java.time.YearMonth.now();
         }
 
         // 2. Definimos el inicio y fin del mes seleccionado
@@ -53,16 +74,19 @@ public class ReporteAdminController {
         // 3. Traemos los reportes de ese mes exacto
         List<com.petramas.model.RegistroDiario> registrosMes = registroRepo.findByFechaBetween(inicioMes, finMes);
 
-        // 4. Sumamos las horas (con el escudo protector para descartar errores negativos)
+        // ==========================================
+        // 4. CONSOLIDADO DE HORAS POR OPERARIO (Ya con descuento de refrigerio)
+        // ==========================================
         java.util.Map<String, Long> minutosPorOperario = new java.util.HashMap<>();
 
         for (com.petramas.model.RegistroDiario reg : registrosMes) {
-            if (reg.getHoraInicio() != null && reg.getHoraFin() != null && reg.getOperario() != null) {
-                long minutos = java.time.Duration.between(reg.getHoraInicio(), reg.getHoraFin()).toMinutes();
+            if (reg.getOperario() != null) {
+                // Usamos nuestro nuevo método de minutos netos
+                long minutosNetos = calcularMinutosNetos(reg.getHoraInicio(), reg.getHoraFin());
                 
-                if (minutos > 0) { // Solo suma si los minutos son reales/positivos
+                if (minutosNetos > 0) { 
                     String nombre = reg.getOperario().getNombreApellido();
-                    minutosPorOperario.put(nombre, minutosPorOperario.getOrDefault(nombre, 0L) + minutos);
+                    minutosPorOperario.put(nombre, minutosPorOperario.getOrDefault(nombre, 0L) + minutosNetos);
                 }
             }
         }
@@ -77,10 +101,10 @@ public class ReporteAdminController {
 
         // 6. Enviamos datos a la vista
         model.addAttribute("reporteHoras", reporteFinal);
-        model.addAttribute("mesSeleccionado", mesSeleccionado.toString()); // Enviamos "2026-09" al HTML
+        model.addAttribute("mesSeleccionado", mesSeleccionado.toString()); 
         
-     // ==========================================
-        // 7. REPORTE DE ÓRDENES (Resumen y Detalle)
+        // ==========================================
+        // 7. REPORTE DE ÓRDENES (Resumen y Detalle con horas netas)
         // ==========================================
         java.util.Map<String, Long> ordenMinutos = new java.util.HashMap<>();
         java.util.Map<String, String> ordenEstados = new java.util.HashMap<>();
@@ -89,21 +113,20 @@ public class ReporteAdminController {
 
         for (com.petramas.model.RegistroDiario reg : registrosMes) {
             
-            // ⚠️ OJO: Cambia "getOrden()" por el nombre de tu atributo (ej. getOrdenTrabajo())
-            if (reg.getHoraInicio() != null && reg.getHoraFin() != null && reg.getOrdenTrabajo() != null) {
+            if (reg.getOrdenTrabajo() != null) {
                 
-                long min = java.time.Duration.between(reg.getHoraInicio(), reg.getHoraFin()).toMinutes();
+                // Usamos el mismo método de minutos netos para las órdenes
+                long minNetosOrden = calcularMinutosNetos(reg.getHoraInicio(), reg.getHoraFin());
                 
-                if (min > 0) {
-                    // ⚠️ OJO: Cambia "getId()" por el nombre de tu ID de Orden (ej. getIdOrden() o getCodigo())
+                if (minNetosOrden > 0) {
                     String codOrden = reg.getOrdenTrabajo().getIdOrden(); 
                     
-                    // A. Sumar el tiempo a la orden
-                    ordenMinutos.put(codOrden, ordenMinutos.getOrDefault(codOrden, 0L) + min);
+                    // A. Sumar el tiempo NETO a la orden
+                    ordenMinutos.put(codOrden, ordenMinutos.getOrDefault(codOrden, 0L) + minNetosOrden);
                     // B. Registrar su estado actual
                     ordenEstados.put(codOrden, reg.getOrdenTrabajo().getEstado());
                     
-                    // C. Guardar trabajadores sin repetir nombres (Usamos HashSet)
+                    // C. Guardar trabajadores sin repetir nombres
                     ordenOperarios.putIfAbsent(codOrden, new java.util.HashSet<>());
                     ordenOperarios.get(codOrden).add(reg.getOperario().getNombreApellido());
                     
@@ -125,16 +148,13 @@ public class ReporteAdminController {
             long m = ordenMinutos.get(cod) % 60;
             fila.put("tiempoTotal", String.format("%d h %02d m", h, m));
             
-            // Unimos los nombres y las fechas separándolos por comas
             fila.put("trabajadores", String.join(" • ", ordenOperarios.get(cod)));
             fila.put("fechas", String.join(", ", ordenFechas.get(cod)));
             
             reporteOrdenes.add(fila);
         }
 
-        // Enviamos la lista de órdenes procesadas a la vista
         model.addAttribute("reporteOrdenes", reporteOrdenes);
-        
         
         return "admin_reportes"; 
     }
