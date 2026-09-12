@@ -8,126 +8,126 @@
 </head>
 <body class="bg-light">
 
-	<!-- Barra de Navegación Unificada -->
-		<nav class="navbar navbar-dark bg-primary shadow-sm py-3">
-		    <div class="container-fluid flex-column align-items-start">
-		        
-		        <!-- Línea 1: Título con text-wrap para que no se corte en celulares -->
-		        <span class="navbar-brand mb-2 h5 text-wrap fw-bold lh-sm">
-		            Petramás | Operaciones en Campo
-		        </span>
-		        
-		        <!-- Línea 2: Usuario a la izquierda y Botón a la derecha -->
-		        <div class="d-flex justify-content-between align-items-center w-100">
-		             <span class="text-white" th:text="'Usuario: ' + ${nombreUsuario}"></span>
-					 <a th:href="@{/logout}" class="btn btn-light text-danger btn-sm fw-bold">Cerrar Sesión</a>
-				 </div>
-		        
-		    </div>
-		</nav>
+    <!-- Barra de Navegación Unificada -->
+    <nav class="navbar navbar-dark bg-primary shadow-sm py-3">
+        <div class="container-fluid flex-column align-items-start">
+            
+            <!-- Línea 1: Título con text-wrap para que no se corte en celulares -->
+            <span class="navbar-brand mb-2 h5 text-wrap fw-bold lh-sm">
+                Petramás | Operaciones en Campo
+            </span>
+            
+            <!-- Línea 2: Usuario a la izquierda y Botón a la derecha -->
+            <div class="d-flex justify-content-between align-items-center w-100">
+                 <span class="text-white" th:text="'Usuario: ' + ${nombreUsuario}"></span>
+                 <a th:href="@{/logout}" class="btn btn-light text-danger btn-sm fw-bold">Cerrar Sesión</a>
+             </div>
+            
+        </div>
+    </nav>
 
 <div class="container mt-5">
-	
-	
-	
+    
     <div class="row text-center justify-content-center">
         
-		<!-- ALERTA DE HORAS PENDIENTES -->
-								<div th:if="${!alertasIncompletas.isEmpty()}" class="alert alert-warning shadow-sm border-warning mb-4">
-								    <div class="d-flex align-items-center mb-2">
-								        <h6 class="mb-0 fw-bold text-dark">
-								            ⚠️ ¡Atención! Tienes horas pendientes
-								        </h6>
-								    </div>
-								    <p class="small text-dark mb-2">
-								        El sistema detectó que en días anteriores no completaste tu jornada de 8 horas. Por favor, regulariza tus reportes para evitar descuentos:
-								    </p>
-								    <ul class="mb-0 small fw-bold text-danger">
-								        <!-- Iteramos sobre la lista de alertas que mandó Java -->
-								        <li th:each="alerta : ${alertasIncompletas}" th:text="${alerta}"></li>
-								    </ul>
-								</div>
-		
-        <!-- Botón a Órdenes (Compartido con el Admin) -->
-        <div class="col-md-5 mb-4">
-            <div class="card shadow-sm h-100 py-4 border-success border-bottom border-3">
-                <div class="card-body">
-                    <h3 class="fw-bold text-success mb-3">Órdenes de Trabajo</h3>
-                    <p class="text-muted mb-4">Consultar, generar y finalizar órdenes de mantenimiento a los equipos.</p>
-                    <a th:href="@{/admin/ordenes}" class="btn btn-success btn-lg w-100">Ingresar</a>
-                </div>
+        <!-- ALERTA DE HORAS PENDIENTES (Mantenida arriba por ser crítica) -->
+        <div th:if="${!alertasIncompletas.isEmpty()}" class="alert alert-warning shadow-sm border-warning mb-4">
+            <div class="d-flex align-items-center mb-2">
+                <h6 class="mb-0 fw-bold text-dark">
+                    ⚠️ ¡Atención! Tienes horas pendientes
+                </h6>
             </div>
+            <p class="small text-dark mb-2">
+                El sistema detectó que en días anteriores no completaste tu jornada de 8 horas. Por favor, regulariza tus reportes para evitar descuentos:
+            </p>
+            <ul class="mb-0 small fw-bold text-danger">
+                <!-- Iteramos sobre la lista de alertas que mandó Java -->
+                <li th:each="alerta : ${alertasIncompletas}" th:text="${alerta}"></li>
+            </ul>
         </div>
-
-        <!-- Botón a Reporte Diario -->
+        
+        <!-- ========================================== -->
+        <!-- CAMBIO 1: REGISTRO DE ACTIVIDADES AHORA VA PRIMERO -->
+        <!-- ========================================== -->
         <div class="col-md-5 mb-4">
             <div class="card shadow-sm h-100 py-4 border-primary border-bottom border-3">
                 <div class="card-body">
                     <h3 class="fw-bold text-primary mb-3">Registro de Actividades</h3>
-                    <p class="text-muted mb-4">Ingresar las horas invertidas en las órdenes del día.</p>
-                    <a th:href="@{/reporte}"class="btn btn-primary btn-lg w-100">Registrar Horas</a> <!-- Ruta pendiente -->
+                    <p class="text-muted mb-4">Ingresa las horas invertidas en las órdenes del día.</p>
+                    <a th:href="@{/reporte}" class="btn btn-primary btn-lg w-100">Registrar Horas</a>
                 </div>
             </div>
         </div>
-		
-		<!-- SECCIÓN: Historial del Día -->
-		    <div class="row justify-content-center mt-4">
-		        <div class="col-md-10">
-		            <div class="card shadow-sm border-0">
-						
-						
-						
-						<div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-							<h5 class="mb-0">Mis Actividades de Hoy (<span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy')}"></span>)</h5>
 
-							<!-- Contenedor con d-flex y gap-2 para separar los elementos automáticamente -->
-											<div class="d-flex flex-wrap align-items-center gap-2 mt-2 mt-md-0">
-											    <span class="badge bg-primary fs-6" th:text="'Total: ' + ${totalHoras}"></span>
-											    
-											    <!-- Botón blanco sólido para que resalte más -->
-											    <a th:href="@{/historial}" class="btn btn-light text-dark btn-sm fw-bold">Ver Historial</a>
-											</div>
-						 </div>
-		                <div class="card-body p-0">
-		                    <div th:if="${#lists.isEmpty(registrosHoy)}" class="p-4 text-center text-muted">
-		                        <em>Aún no has registrado actividades el día de hoy.</em>
-		                    </div>
-		                    
-		                    <div class="table-responsive" th:if="${!#lists.isEmpty(registrosHoy)}">
-		                        <table class="table table-hover mb-0">
-		                            <thead class="table-light">
-		                                <tr>
-		                                    <th>Orden</th>
-		                                    <th>Horario</th>
-		                                    <th>Actividad Realizada</th>
-											<th></th>
-		                                </tr>
-		                            </thead>
-		                            <tbody>
-		                                <tr th:each="reg : ${registrosHoy}">
-		                                    <td class="fw-bold text-success" th:text="${reg.ordenTrabajo.idOrden}"></td>
-		                                    <td>
-		                                        <span th:text="${reg.horaInicio}"></span> - 
-		                                        <span th:text="${reg.horaFin}"></span>
-		                                    </td>
-		                                    <td th:text="${reg.actividad}"></td>
-											<!-- NUEVO: Botón de eliminar -->
-											    <td class="text-center">
-											        <a th:href="@{/reporte/eliminar/{id}(id=${reg.idRegistro})}" 
-											           class="btn btn-outline-danger btn-sm px-2 py-0" 
-											           onclick="return confirm('¿Seguro que deseas eliminar este registro?');">
-											            X
-											        </a>
-											    </td>
-										
-										</tr>
-		                            </tbody>
-		                        </table>
-		                    </div>
-		                </div>
-		            </div>
-		        </div>
-		    </div>
+        <!-- ========================================== -->
+        <!-- CAMBIO 2: ÓRDENES PASA A SEGUNDO LUGAR Y CAMBIA NOMBRE -->
+        <!-- ========================================== -->
+        <div class="col-md-5 mb-4">
+            <div class="card shadow-sm h-100 py-4 border-success border-bottom border-3">
+                <div class="card-body">
+                    <h3 class="fw-bold text-success mb-3">Órdenes Activas</h3>
+                    <p class="text-muted mb-4">Consulta las órdenes de mantenimiento o genera una nueva.</p>
+                    <a th:href="@{/admin/ordenes}" class="btn btn-success btn-lg w-100">Ver Órdenes</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SECCIÓN: Historial del Día -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-10">
+                <div class="card shadow-sm border-0">
+                    
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Mis Actividades de Hoy (<span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy')}"></span>)</h5>
+
+                        <!-- Contenedor con d-flex y gap-2 para separar los elementos automáticamente -->
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-2 mt-md-0">
+                            <span class="badge bg-primary fs-6" th:text="'Total: ' + ${totalHoras}"></span>
+                            
+                            <!-- Botón blanco sólido para que resalte más -->
+                            <a th:href="@{/historial}" class="btn btn-light text-dark btn-sm fw-bold">Ver Historial</a>
+                        </div>
+                     </div>
+                    <div class="card-body p-0">
+                        <div th:if="${#lists.isEmpty(registrosHoy)}" class="p-4 text-center text-muted">
+                            <em>Aún no has registrado actividades el día de hoy.</em>
+                        </div>
+                        
+                        <div class="table-responsive" th:if="${!#lists.isEmpty(registrosHoy)}">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Orden</th>
+                                        <th>Horario</th>
+                                        <th>Actividad Realizada</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="reg : ${registrosHoy}">
+                                        <td class="fw-bold text-success" th:text="${reg.ordenTrabajo.idOrden}"></td>
+                                        <td>
+                                            <span th:text="${reg.horaInicio}"></span> - 
+                                            <span th:text="${reg.horaFin}"></span>
+                                        </td>
+                                        <td th:text="${reg.actividad}"></td>
+                                        <!-- Botón de eliminar -->
+                                        <td class="text-center">
+                                            <a th:href="@{/reporte/eliminar/{id}(id=${reg.idRegistro})}" 
+                                               class="btn btn-outline-danger btn-sm px-2 py-0" 
+                                               onclick="return confirm('¿Seguro que deseas eliminar este registro?');">
+                                                X
+                                            </a>
+                                        </td>
+                                    
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     </div>
 </div>
