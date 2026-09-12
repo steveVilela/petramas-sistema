@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>Órdenes de Trabajo - Petramás</title>
+    <style>
+        /* Estilo personalizado para que la pestaña activa sea verde Petramás */
+        .nav-pills .nav-link.active {
+            background-color: #198754 !important; 
+            color: white !important;
+        }
+        .nav-pills .nav-link {
+            color: #6c757d;
+        }
+    </style>
 </head>
 <body class="bg-light">
 
@@ -23,14 +33,16 @@
 
 <div class="container mt-4 mb-5">
     
-    <!-- HEADER: Botón Volver y Botón Nueva Orden -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- HEADER: Botón Volver y Botón Nueva Orden GIGANTE para móviles -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <a th:href="@{${rolUsuario == 'Administrador' ? '/admin' : '/dashboard'}}" 
-           class="btn btn-outline-secondary btn-sm fw-bold">← Volver al Panel</a>
+           class="btn btn-outline-secondary btn-sm fw-bold align-self-start align-self-md-center">
+           ← Volver al Panel
+        </a>
            
-        <!-- BOTÓN MÁGICO: Muestra/Oculta el formulario -->
-        <button class="btn btn-success fw-bold shadow-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormulario" aria-expanded="false" aria-controls="collapseFormulario">
-            + Generar Nueva Orden
+        <!-- BOTÓN MÁGICO: Ancho completo en móviles, tamaño normal en PC -->
+        <button class="btn btn-success btn-lg fw-bold shadow-sm w-100 w-md-auto py-2 py-md-1 fs-6" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormulario" aria-expanded="false" aria-controls="collapseFormulario">
+            ➕ Generar Nueva Orden
         </button>
     </div>
 
@@ -48,12 +60,20 @@
     <!-- FORMULARIO OCULTO (Collapse)               -->
     <!-- ========================================== -->
     <div class="collapse mb-4" id="collapseFormulario" th:classappend="${modoEdicion} ? 'show' : ''">
-        <div class="card shadow-sm border-success">
+        <div class="card shadow border-success">
             <div class="card-header bg-success text-white">
                 <h5 class="mb-0" th:text="${modoEdicion} ? 'Editar Orden de Trabajo' : 'Generar Nueva Orden'">Generar Nueva Orden</h5>
             </div>
             <div class="card-body bg-white">
                 <form th:action="@{/admin/guardarOrden}" th:object="${nuevaOrden}" method="post">
+                    <!-- BOTÓN DE ESCANEO PARA LA DEMO -->
+                    <div th:if="${!modoEdicion}" class="mb-3 text-center bg-light p-3 rounded border border-dashed">
+                        <p class="small text-muted mb-2">¿Tienes la orden física impresa?</p>
+                        <button type="button" id="btn-escanear" class="btn btn-outline-primary fw-bold shadow-sm">
+                            📷 Escanear Documento con IA
+                        </button>
+                    </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold text-secondary">N° de Orden</label>
@@ -82,54 +102,137 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- LISTADO DE ÓRDENES (Formato Tarjetas)      -->
+    <!-- LISTADO DE ÓRDENES (Separado por Tabs)     -->
     <!-- ========================================== -->
-    <h5 class="fw-bold text-secondary mb-3 border-bottom pb-2">
-        Registro de Órdenes <span class="badge bg-secondary ms-2" th:text="${#lists.size(listaOrdenes)} + ' Total'"></span>
-    </h5>
-
-    <div th:if="${#lists.isEmpty(listaOrdenes)}" class="alert alert-light text-center py-4 shadow-sm">
-        No hay órdenes registradas actualmente.
+    <div class="text-center mb-3">
+        <h4 class="fw-bold text-dark">Registro de Órdenes</h4>
     </div>
 
-    <!-- Grilla Responsiva para las Tarjetas -->
-    <div class="row g-3">
-        <div class="col-12 col-md-6 col-lg-4" th:each="orden : ${listaOrdenes}">
-            <!-- Tarjeta individual -->
-            <div class="card shadow-sm h-100 border-0" th:classappend="${orden.estado == 'Pendiente'} ? 'border-start border-warning border-4' : 'border-start border-primary border-4'">
-                
-                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
-                    <span class="badge bg-success fs-6" th:text="${orden.idOrden}"></span>
-                    <span class="badge" th:classappend="${orden.estado == 'Pendiente' ? 'bg-warning text-dark' : 'bg-primary'}" th:text="${orden.estado}"></span>
+    <!-- Lógica de Thymeleaf para separar las listas automáticamente -->
+    <th:block th:with="
+        activas=${listaOrdenes.?[estado == 'Pendiente']},
+        finalizadas=${listaOrdenes.?[estado == 'Finalizado']}">
+
+        <!-- PESTAÑAS (Pills) -->
+        <ul class="nav nav-pills nav-fill gap-2 p-1 bg-white border rounded-pill shadow-sm mb-4" id="pills-tab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active rounded-pill fw-bold" id="pills-activas-tab" data-bs-toggle="pill" data-bs-target="#pills-activas" type="button" role="tab" aria-controls="pills-activas" aria-selected="true">
+                    Activas <span class="badge bg-light text-success rounded-pill ms-1" th:text="${#lists.size(activas)}">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill fw-bold" id="pills-finalizadas-tab" data-bs-toggle="pill" data-bs-target="#pills-finalizadas" type="button" role="tab" aria-controls="pills-finalizadas" aria-selected="false">
+                    Finalizadas <span class="badge bg-secondary rounded-pill ms-1" th:text="${#lists.size(finalizadas)}">0</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- CONTENIDO DE LAS PESTAÑAS -->
+        <div class="tab-content" id="pills-tabContent">
+            
+            <!-- PESTAÑA 1: ACTIVAS -->
+            <div class="tab-pane fade show active" id="pills-activas" role="tabpanel" aria-labelledby="pills-activas-tab" tabindex="0">
+                <div th:if="${#lists.isEmpty(activas)}" class="alert alert-light text-center py-4 shadow-sm">
+                    No hay órdenes activas pendientes.
                 </div>
-                
-                <div class="card-body py-2">
-                    <h6 class="fw-bold text-dark mb-1" th:text="${orden.equipo}"></h6>
-                    <p class="text-muted small mb-2 lh-sm" th:text="${orden.descripcion}"></p>
-                    
-                    <div class="small bg-light p-2 rounded">
-                        <div class="text-secondary"><strong class="text-dark">Emisión:</strong> <span th:text="${orden.fechaCreacion != null ? orden.fechaCreacion : 'N/A'}"></span></div>
-                        <div class="text-success mt-1" th:if="${orden.fechaFinalizacion != null}"><strong class="text-dark">Cierre:</strong> <span th:text="${orden.fechaFinalizacion}"></span></div>
+                <div class="row g-3">
+                    <div class="col-12" th:each="orden : ${activas}">
+                        <div class="card shadow-sm border-0 border-start border-warning border-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-success fs-6 px-3" th:text="${orden.idOrden}"></span>
+                                    <span class="badge bg-warning text-dark" th:text="${orden.estado}"></span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1" th:text="${orden.equipo}"></h6>
+                                <p class="text-muted small mb-2 lh-sm" th:text="${orden.descripcion}"></p>
+                                
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mt-3">
+                                    <div class="small text-secondary mb-3 mb-md-0 bg-light p-2 rounded">
+                                        <strong class="text-dark">Emisión:</strong> <span th:text="${orden.fechaCreacion != null ? orden.fechaCreacion : 'N/A'}"></span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a th:href="@{/admin/editarOrden/{id}(id=${orden.idOrden})}" class="btn btn-outline-primary btn-sm fw-bold px-3">✏️ Editar</a>
+                                        <a th:href="@{/admin/finalizarOrden/{id}(id=${orden.idOrden})}" class="btn btn-success btn-sm fw-bold px-3" onclick="return confirm('¿Marcar esta orden como FINALIZADA?');">✅ Finalizar</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="card-footer bg-white border-0 d-flex justify-content-end gap-2 pb-3">
-                    <a th:href="@{/admin/editarOrden/{id}(id=${orden.idOrden})}" class="btn btn-outline-primary btn-sm fw-bold px-3">✏️ Editar</a>
-                    
-                    <a th:if="${orden.estado == 'Pendiente'}" 
-                       th:href="@{/admin/finalizarOrden/{id}(id=${orden.idOrden})}" 
-                       class="btn btn-warning btn-sm fw-bold text-dark px-3"
-                       onclick="return confirm('¿Marcar esta orden como FINALIZADA?');">✅ Finalizar</a>
-                       
-                    <span th:if="${orden.estado == 'Finalizado'}" class="btn btn-sm btn-light text-success fw-bold disabled px-3">✔ Listo</span>
+            </div>
+
+            <!-- PESTAÑA 2: FINALIZADAS -->
+            <div class="tab-pane fade" id="pills-finalizadas" role="tabpanel" aria-labelledby="pills-finalizadas-tab" tabindex="0">
+                <div th:if="${#lists.isEmpty(finalizadas)}" class="alert alert-light text-center py-4 shadow-sm">
+                    No hay órdenes finalizadas.
+                </div>
+                <div class="row g-3">
+                    <div class="col-12" th:each="orden : ${finalizadas}">
+                        <div class="card shadow-sm border-0 border-start border-primary border-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge bg-success fs-6 px-3" th:text="${orden.idOrden}"></span>
+                                    <span class="badge bg-primary" th:text="${orden.estado}"></span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1" th:text="${orden.equipo}"></h6>
+                                <p class="text-muted small mb-2 lh-sm" th:text="${orden.descripcion}"></p>
+                                
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mt-3">
+                                    <div class="small text-secondary mb-3 mb-md-0 bg-light p-2 rounded w-100 w-md-auto">
+                                        <div><strong class="text-dark">Emisión:</strong> <span th:text="${orden.fechaCreacion != null ? orden.fechaCreacion : 'N/A'}"></span></div>
+                                        <div class="text-success mt-1"><strong class="text-dark">Cierre:</strong> <span th:text="${orden.fechaFinalizacion}"></span></div>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center">
+                                        <a th:href="@{/admin/editarOrden/{id}(id=${orden.idOrden})}" class="btn btn-outline-primary btn-sm fw-bold px-3">✏️ Editar</a>
+                                        <span class="text-success fw-bold ms-2">✔ Listo</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+
         </div>
-    </div>
+    </th:block>
 
 </div>
 
-<!-- Carga del JS de Bootstrap para que funcione el Collapse -->
+<!-- Carga del JS de Bootstrap para Collapse y Tabs -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Script Mágico del Escáner IA (Demo) -->
+<script>
+    const btnEscanear = document.getElementById('btn-escanear');
+    if(btnEscanear) {
+        btnEscanear.addEventListener('click', function() {
+            let btn = this;
+            let textoOriginal = btn.innerHTML;
+            
+            btn.innerHTML = '⏳ Procesando imagen...';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-primary');
+            btn.disabled = true;
+
+            setTimeout(function() {
+                document.getElementById('idOrden').value = '2100189828';
+                document.getElementById('fechaCreacion').value = '2026-09-09';
+                document.getElementById('equipo').value = 'MOTONIV-04 MOTONIVELADORA CATERPILLAR 140K';
+                document.getElementById('descripcion').value = 'REVISAR BRONCE DE CUCHILLAS';
+
+                btn.innerHTML = '✅ ¡Datos Extraídos!';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                
+                setTimeout(function(){
+                    btn.innerHTML = textoOriginal;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-primary');
+                    btn.disabled = false;
+                }, 3000);
+            }, 2000); 
+        });
+    }
+</script>
 </body>
 </html>
