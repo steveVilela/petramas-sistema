@@ -123,17 +123,34 @@ public class SoldadorController {
     }
     
     @GetMapping("/historial")
-    public String verHistorial(HttpSession session, Model model) {
+    public String verHistorial(@RequestParam(name = "fechaFiltro", required = false) String fechaStr, 
+                               HttpSession session, Model model) {
         Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
         
         if (usuario == null || !"Soldador".equalsIgnoreCase(usuario.getEspecialidad())) {
             return "redirect:/";
         }
         
-        List<RegistroDiario> miHistorial = registroRepo.findByOperarioOrderByFechaDesc(usuario);
+        LocalDate fechaSeleccionada;
+        if (fechaStr != null && !fechaStr.isEmpty()) {
+            fechaSeleccionada = LocalDate.parse(fechaStr);
+        } else {
+            fechaSeleccionada = LocalDate.now(); // Por defecto muestra el día de hoy
+        }
+        
+        // Buscamos los registros del operario para esa fecha específica
+        List<RegistroDiario> registrosDelDia = registroRepo.findByOperarioAndFechaOrderByHoraInicioAsc(usuario, fechaSeleccionada);
+        
+        // Calculamos las horas netas totales del día seleccionado usando tu lógica de refrigerio
+        double horasNetasDia = calcularHorasNetasDia(registrosDelDia);
+        long horas = (long) horasNetasDia;
+        long minutos = Math.round((horasNetasDia - horas) * 60);
+        String totalHorasDiaFormato = String.format("%d h %02d m", horas, minutos);
         
         model.addAttribute("nombreUsuario", usuario.getNombreApellido());
-        model.addAttribute("registros", miHistorial);
+        model.addAttribute("registros", registrosDelDia);
+        model.addAttribute("fechaSeleccionada", fechaSeleccionada.toString());
+        model.addAttribute("totalHorasDia", totalHorasDiaFormato);
         
         return "soldador_historial";
     }
