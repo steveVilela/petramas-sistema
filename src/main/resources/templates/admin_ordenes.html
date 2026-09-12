@@ -40,7 +40,6 @@
            ← Volver al Panel
         </a>
            
-        <!-- BOTÓN MÁGICO: Ancho completo en móviles, tamaño normal en PC -->
         <button class="btn btn-success btn-lg fw-bold shadow-sm w-100 w-md-auto py-2 py-md-1 fs-6" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormulario" aria-expanded="false" aria-controls="collapseFormulario">
             ➕ Generar Nueva Orden
         </button>
@@ -59,15 +58,16 @@
     <!-- ========================================== -->
     <!-- FORMULARIO OCULTO (Collapse)               -->
     <!-- ========================================== -->
-    <div class="collapse mb-4" id="collapseFormulario" th:classappend="${modoEdicion} ? 'show' : ''">
+    <div class="collapse mb-4" id="collapseFormulario" th:classappend="${modoEdicion == true} ? 'show' : ''">
         <div class="card shadow border-success">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0" th:text="${modoEdicion} ? 'Editar Orden de Trabajo' : 'Generar Nueva Orden'">Generar Nueva Orden</h5>
+                <h5 class="mb-0" th:text="${modoEdicion == true} ? 'Editar Orden de Trabajo' : 'Generar Nueva Orden'">Generar Nueva Orden</h5>
             </div>
             <div class="card-body bg-white">
                 <form th:action="@{/admin/guardarOrden}" th:object="${nuevaOrden}" method="post">
-                    <!-- BOTÓN DE ESCANEO PARA LA DEMO -->
-                    <div th:if="${!modoEdicion}" class="mb-3 text-center bg-light p-3 rounded border border-dashed">
+                    
+                    <!-- BOTÓN DE ESCANEO PARA LA DEMO (SOLUCIONADO EL ERROR DE NULL) -->
+                    <div th:unless="${modoEdicion == true}" class="mb-3 text-center bg-light p-3 rounded border border-dashed">
                         <p class="small text-muted mb-2">¿Tienes la orden física impresa?</p>
                         <button type="button" id="btn-escanear" class="btn btn-outline-primary fw-bold shadow-sm">
                             📷 Escanear Documento con IA
@@ -77,7 +77,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold text-secondary">N° de Orden</label>
-                            <input type="text" class="form-control" th:field="*{idOrden}" required th:readonly="${modoEdicion}" placeholder="Ej: 2100189507">
+                            <input type="text" class="form-control" th:field="*{idOrden}" required th:readonly="${modoEdicion == true}" placeholder="Ej: 2100189507">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold text-secondary">Fecha de Emisión</label>
@@ -93,8 +93,8 @@
                         <textarea class="form-control" th:field="*{descripcion}" rows="2" required placeholder="Sintoma de avería o tarea requerida..."></textarea>
                     </div>
                     <div class="d-flex gap-2 justify-content-end">
-                        <a th:if="${modoEdicion}" th:href="@{/admin/ordenes}" class="btn btn-outline-secondary fw-bold">Cancelar</a>
-                        <button type="submit" class="btn btn-success fw-bold px-4" th:text="${modoEdicion} ? 'Actualizar Orden' : 'Emitir Orden'">Emitir Orden</button>
+                        <a th:if="${modoEdicion == true}" th:href="@{/admin/ordenes}" class="btn btn-outline-secondary fw-bold">Cancelar</a>
+                        <button type="submit" class="btn btn-success fw-bold px-4" th:text="${modoEdicion == true} ? 'Actualizar Orden' : 'Emitir Orden'">Emitir Orden</button>
                     </div>
                 </form>
             </div>
@@ -108,10 +108,10 @@
         <h4 class="fw-bold text-dark">Registro de Órdenes</h4>
     </div>
 
-    <!-- Lógica de Thymeleaf para separar las listas automáticamente -->
+    <!-- Lógica de Thymeleaf BLINDADA contra listas nulas -->
     <th:block th:with="
-        activas=${listaOrdenes.?[estado == 'Pendiente']},
-        finalizadas=${listaOrdenes.?[estado == 'Finalizado']}">
+        activas=${listaOrdenes != null ? listaOrdenes.?[estado == 'Pendiente'] : {}},
+        finalizadas=${listaOrdenes != null ? listaOrdenes.?[estado == 'Finalizado'] : {}}">
 
         <!-- PESTAÑAS (Pills) -->
         <ul class="nav nav-pills nav-fill gap-2 p-1 bg-white border rounded-pill shadow-sm mb-4" id="pills-tab" role="tablist">
@@ -132,8 +132,8 @@
             
             <!-- PESTAÑA 1: ACTIVAS -->
             <div class="tab-pane fade show active" id="pills-activas" role="tabpanel" aria-labelledby="pills-activas-tab" tabindex="0">
-                <div th:if="${#lists.isEmpty(activas)}" class="alert alert-light text-center py-4 shadow-sm">
-                    No hay órdenes activas pendientes.
+                <div th:if="${#lists.isEmpty(activas)}" class="alert alert-light text-center py-4 shadow-sm border border-warning border-start-4">
+                    <strong>¡Todo al día!</strong> No hay órdenes activas pendientes en este momento.
                 </div>
                 <div class="row g-3">
                     <div class="col-12" th:each="orden : ${activas}">
@@ -163,8 +163,8 @@
 
             <!-- PESTAÑA 2: FINALIZADAS -->
             <div class="tab-pane fade" id="pills-finalizadas" role="tabpanel" aria-labelledby="pills-finalizadas-tab" tabindex="0">
-                <div th:if="${#lists.isEmpty(finalizadas)}" class="alert alert-light text-center py-4 shadow-sm">
-                    No hay órdenes finalizadas.
+                <div th:if="${#lists.isEmpty(finalizadas)}" class="alert alert-light text-center py-4 shadow-sm border border-primary border-start-4">
+                    Aún no se han finalizado órdenes.
                 </div>
                 <div class="row g-3">
                     <div class="col-12" th:each="orden : ${finalizadas}">
