@@ -70,12 +70,17 @@
             <div class="card-body bg-white">
                 <form th:action="@{/admin/guardarOrden}" th:object="${nuevaOrden}" method="post">
                     
-                    <!-- BOTÓN DE ESCANEO PARA LA DEMO (SOLUCIONADO EL ERROR DE NULL) -->
+                    <!-- BOTÓN DE ESCANEO CON OPCIÓN MÚLTIPLE PARA MÓVIL Y PC -->
                     <div th:unless="${modoEdicion == true}" class="mb-3 text-center bg-light p-3 rounded border border-dashed">
                         <p class="small text-muted mb-2">¿Tienes la orden física impresa?</p>
-                        <button type="button" id="btn-escanear" class="btn btn-outline-primary fw-bold shadow-sm">
-                            📷 Escanear Documento con IA
-                        </button>
+                        <div class="d-flex justify-content-center gap-2">
+                            <button type="button" id="btn-camara" class="btn btn-outline-primary fw-bold shadow-sm">
+                                📷 Tomar Foto
+                            </button>
+                            <button type="button" id="btn-galeria" class="btn btn-outline-secondary fw-bold shadow-sm">
+                                🖼️ Subir de Galería
+                            </button>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -208,102 +213,109 @@
 <!-- Script Mágico del Escáner IA (Demo) -->
 <!-- Script Conectado a la IA de Google Cloud Vision -->
 	<script>
-     const btnEscanear = document.getElementById('btn-escanear');
-    if(btnEscanear) {
-        btnEscanear.addEventListener('click', function() {
+    // Función común para procesar la imagen seleccionada con Google Cloud Vision
+    async function procesarImagenSeleccionada(file, botonElemento) {
+        if (!file) return;
+
+        let textoOriginal = botonElemento.innerHTML;
+        botonElemento.innerHTML = '⏳ Analizando Orden con IA...';
+        botonElemento.classList.remove('btn-outline-primary', 'btn-outline-secondary');
+        botonElemento.classList.add('btn-primary');
+        botonElemento.disabled = true;
+
+        let formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            let response = await fetch('/api/vision/leer-texto', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                let data = await response.json();
+                let textoCompleto = data.join('\n');
+
+                let matchOrden = textoCompleto.match(/\b\d{10}\b/);
+                if (matchOrden) {
+                    document.getElementById('idOrden').value = matchOrden[0];
+                }
+
+                let matchFecha = textoCompleto.match(/\b\d{2}\.\d{2}\.\d{4}\b/);
+                if (matchFecha) {
+                    let partes = matchFecha[0].split('.');
+                    document.getElementById('fechaCreacion').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
+                }
+
+                let lineas = textoCompleto.split('\n');
+                for (let i = 0; i < lineas.length; i++) {
+                    let linea = lineas[i];
+                    if (linea.includes('EXC-') || linea.includes('C-') || linea.includes('EQUIPO') || linea.includes('EXCAVADORA')) {
+                        let equipoTexto = linea.replace('Equipo', '').replace(':', '').trim();
+                        if(equipoTexto.length > 3) {
+                            document.getElementById('equipo').value = equipoTexto;
+                            break;
+                        }
+                    }
+                }
+                if (!document.getElementById('equipo').value) {
+                    let matchExc = textoCompleto.match(/EXC-[^\n]+/);
+                    if (matchExc) {
+                        document.getElementById('equipo').value = matchExc[0].trim();
+                    }
+                }
+
+                let matchDesc = textoCompleto.match(/ROTURA DE ADAPTER|[A-Z\s]{5,25}ADAPTER|[A-Z\s]{5,30}CORRECTIVA/i);
+                if (matchDesc) {
+                    document.getElementById('descripcion').value = matchDesc[0].trim();
+                } else {
+                    document.getElementById('descripcion').value = "Trabajo registrado según orden física escaneada.";
+                }
+
+                botonElemento.innerHTML = '✅ ¡Datos Rellenados!';
+                botonElemento.classList.remove('btn-primary');
+                botonElemento.classList.add('btn-success');
+            } else {
+                alert('Error al procesar la imagen con la IA.');
+                botonElemento.innerHTML = '❌ Error';
+            }
+        } catch (error) {
+            console.error('Error de red:', error);
+            alert('No se pudo conectar con el servidor.');
+            botonElemento.innerHTML = '❌ Error';
+        }
+
+        setTimeout(function(){
+            botonElemento.innerHTML = textoOriginal;
+            botonElemento.classList.remove('btn-success');
+            botonElemento.classList.add('btn-outline-primary');
+            botonElemento.disabled = false;
+        }, 3000);
+    }
+
+    // Botón 1: Abre DIRECTAMENTE LA CÁMARA en celulares
+    const btnCamara = document.getElementById('btn-camara');
+    if(btnCamara) {
+        btnCamara.addEventListener('click', function() {
             let fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
+            fileInput.setAttribute('capture', 'environment'); // Fuerza cámara trasera
             
-            // Eliminamos la línea de 'capture' para que el celular te dé a elegir 
-            // entre la cámara o la galería/archivos.
+            fileInput.onchange = e => procesarImagenSeleccionada(e.target.files[0], btnCamara);
+            fileInput.click();
+        });
+    }
+
+    // Botón 2: Abre DIRECTAMENTE LA GALERÍA / ARCHIVOS
+    const btnGaleria = document.getElementById('btn-galeria');
+    if(btnGaleria) {
+        btnGaleria.addEventListener('click', function() {
+            let fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*'; // Sin atributo capture, abre la galería o explorador
             
-            fileInput.onchange = async e => {
-                let file = e.target.files[0];
-                if (!file) return;
-                
-                // ... el resto de tu código de fetch y procesamiento sigue igual ...
-
-	
-
-                let btn = btnEscanear;
-                let textoOriginal = btn.innerHTML;
-                
-                btn.innerHTML = '⏳ Analizando Orden con IA...';
-                btn.classList.remove('btn-outline-primary');
-                btn.classList.add('btn-primary');
-                btn.disabled = true;
-
-                let formData = new FormData();
-                formData.append('file', file);
-
-                try {
-                    let response = await fetch('/api/vision/leer-texto', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        let data = await response.json();
-                        let textoCompleto = data.join('\n');
-
-                        let matchOrden = textoCompleto.match(/\b\d{10}\b/);
-                        if (matchOrden) {
-                            document.getElementById('idOrden').value = matchOrden[0];
-                        }
-
-                        let matchFecha = textoCompleto.match(/\b\d{2}\.\d{2}\.\d{4}\b/);
-                        if (matchFecha) {
-                            let partes = matchFecha[0].split('.');
-                            document.getElementById('fechaCreacion').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
-                        }
-
-                        let lineas = textoCompleto.split('\n');
-                        for (let i = 0; i < lineas.length; i++) {
-                            let linea = lineas[i];
-                            if (linea.includes('EXC-') || linea.includes('C-') || linea.includes('EQUIPO') || linea.includes('EXCAVADORA')) {
-                                let equipoTexto = linea.replace('Equipo', '').replace(':', '').trim();
-                                if(equipoTexto.length > 3) {
-                                    document.getElementById('equipo').value = equipoTexto;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!document.getElementById('equipo').value) {
-                            let matchExc = textoCompleto.match(/EXC-[^\n]+/);
-                            if (matchExc) {
-                                document.getElementById('equipo').value = matchExc[0].trim();
-                            }
-                        }
-
-                        let matchDesc = textoCompleto.match(/ROTURA DE ADAPTER|[A-Z\s]{5,25}ADAPTER|[A-Z\s]{5,30}CORRECTIVA/i);
-                        if (matchDesc) {
-                            document.getElementById('descripcion').value = matchDesc[0].trim();
-                        } else {
-                            document.getElementById('descripcion').value = "Trabajo registrado según orden física escaneada.";
-                        }
-
-                        btn.innerHTML = '✅ ¡Datos Rellenados con Éxito!';
-                        btn.classList.remove('btn-primary');
-                        btn.classList.add('btn-success');
-                    } else {
-                        alert('Error al procesar la imagen con la IA.');
-                        btn.innerHTML = '❌ Error';
-                    }
-                } catch (error) {
-                    console.error('Error de red:', error);
-                    alert('No se pudo conectar con el servidor.');
-                    btn.innerHTML = '❌ Error';
-                }
-
-                setTimeout(function(){
-                    btn.innerHTML = textoOriginal;
-                    btn.classList.remove('btn-success', 'btn-primary');
-                    btn.classList.add('btn-outline-primary');
-                    btn.disabled = false;
-                }, 3000);
-            };
-
+            fileInput.onchange = e => procesarImagenSeleccionada(e.target.files[0], btnGaleria);
             fileInput.click();
         });
     }
