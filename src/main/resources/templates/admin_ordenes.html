@@ -216,6 +216,9 @@
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
             
+            // ¡ESTA ES LA CLAVE! Fuerza a abrir la cámara directamente en móviles
+            fileInput.setAttribute('capture', 'environment');
+            
             fileInput.onchange = async e => {
                 let file = e.target.files[0];
                 if (!file) return;
@@ -241,27 +244,21 @@
                         let data = await response.json();
                         let textoCompleto = data.join('\n');
 
-                        // 1. EXTRAER N° DE ORDEN (Busca 10 dígitos)
                         let matchOrden = textoCompleto.match(/\b\d{10}\b/);
                         if (matchOrden) {
                             document.getElementById('idOrden').value = matchOrden[0];
                         }
 
-                        // 2. EXTRAER FECHA DE EMISIÓN (Busca formato DD.MM.YYYY o similar del documento)
                         let matchFecha = textoCompleto.match(/\b\d{2}\.\d{2}\.\d{4}\b/);
                         if (matchFecha) {
                             let partes = matchFecha[0].split('.');
-                            // Convertir a formato YYYY-MM-DD para el input type="date"
                             document.getElementById('fechaCreacion').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
                         }
 
-                        // 3. EXTRAER EQUIPO / MAQUINARIA (Busca etiquetas comunes en órdenes Petramás)
                         let lineas = textoCompleto.split('\n');
                         for (let i = 0; i < lineas.length; i++) {
                             let linea = lineas[i];
-                            // Si encuentra la línea de equipo o excavadora/camión
                             if (linea.includes('EXC-') || linea.includes('C-') || linea.includes('EQUIPO') || linea.includes('EXCAVADORA')) {
-                                // Limpiamos la etiqueta si la trae pegada
                                 let equipoTexto = linea.replace('Equipo', '').replace(':', '').trim();
                                 if(equipoTexto.length > 3) {
                                     document.getElementById('equipo').value = equipoTexto;
@@ -269,7 +266,6 @@
                                 }
                             }
                         }
-                        // Fallback si no halló la línea exacta: toma el texto que dice EXC-18 de tu formato
                         if (!document.getElementById('equipo').value) {
                             let matchExc = textoCompleto.match(/EXC-[^\n]+/);
                             if (matchExc) {
@@ -277,12 +273,10 @@
                             }
                         }
 
-                        // 4. DESCRIPCIÓN DEL TRABAJO (Extrae la avería o tarea general)
                         let matchDesc = textoCompleto.match(/ROTURA DE ADAPTER|[A-Z\s]{5,25}ADAPTER|[A-Z\s]{5,30}CORRECTIVA/i);
                         if (matchDesc) {
                             document.getElementById('descripcion').value = matchDesc[0].trim();
                         } else {
-                            // Si no halla el texto exacto, pone un resumen del texto detectado
                             document.getElementById('descripcion').value = "Trabajo registrado según orden física escaneada.";
                         }
 
@@ -311,5 +305,6 @@
         });
     }
 </script>
+
 </body>
 </html>
