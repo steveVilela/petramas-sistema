@@ -8,8 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,14 +23,15 @@ public class VisionController {
         List<String> resultadosTextos = new ArrayList<>();
 
         try {
-            // Cargar el JSON de credenciales directamente desde la carpeta resources
-            InputStream credentialsStream = getClass().getClassLoader().getResourceAsStream("google-credentials.json");
+            // Obtenemos el JSON de la credencial desde la variable de entorno de Render
+            String credentialsJson = System.getenv("GOOGLE_CREDENTIALS_JSON");
             
-            if (credentialsStream == null) {
-                resultadosTextos.add("Error: No se encontró el archivo google-credentials.json en resources.");
+            if (credentialsJson == null || credentialsJson.isEmpty()) {
+                resultadosTextos.add("Error: La variable de entorno GOOGLE_CREDENTIALS_JSON no está configurada.");
                 return ResponseEntity.internalServerError().body(resultadosTextos);
             }
 
+            InputStream credentialsStream = new ByteArrayInputStream(credentialsJson.getBytes(StandardCharsets.UTF_8));
             GoogleCredentials credentials = GoogleCredentials.fromStream(credentialsStream);
 
             ImageAnnotatorSettings settings = ImageAnnotatorSettings.newBuilder()
@@ -50,7 +52,6 @@ public class VisionController {
                     .build();
             requests.add(request);
 
-            // Inicializar el cliente usando las credenciales explícitas
             try (ImageAnnotatorClient client = ImageAnnotatorClient.create(settings)) {
                 BatchAnnotateImagesResponse response = client.batchAnnotateImages(requests);
                 List<AnnotateImageResponse> responses = response.getResponsesList();
