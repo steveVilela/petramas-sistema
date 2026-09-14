@@ -202,35 +202,108 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Script Mágico del Escáner IA (Demo) -->
+<!-- Script Conectado a la IA de Google Cloud Vision -->
+<!-- Script Avanzado: Extracción Inteligente de Campos de la Orden -->
 <script>
     const btnEscanear = document.getElementById('btn-escanear');
     if(btnEscanear) {
         btnEscanear.addEventListener('click', function() {
-            let btn = this;
-            let textoOriginal = btn.innerHTML;
+            let fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
             
-            btn.innerHTML = '⏳ Procesando imagen...';
-            btn.classList.remove('btn-outline-primary');
-            btn.classList.add('btn-primary');
-            btn.disabled = true;
+            fileInput.onchange = async e => {
+                let file = e.target.files[0];
+                if (!file) return;
 
-            setTimeout(function() {
-                document.getElementById('idOrden').value = '2100189828';
-                document.getElementById('fechaCreacion').value = '2026-09-09';
-                document.getElementById('equipo').value = 'MOTONIV-04 MOTONIVELADORA CATERPILLAR 140K';
-                document.getElementById('descripcion').value = 'REVISAR BRONCE DE CUCHILLAS';
-
-                btn.innerHTML = '✅ ¡Datos Extraídos!';
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-success');
+                let btn = btnEscanear;
+                let textoOriginal = btn.innerHTML;
                 
+                btn.innerHTML = '⏳ Analizando Orden con IA...';
+                btn.classList.remove('btn-outline-primary');
+                btn.classList.add('btn-primary');
+                btn.disabled = true;
+
+                let formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    let response = await fetch('/api/vision/leer-texto', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        let data = await response.json();
+                        let textoCompleto = data.join('\n');
+
+                        // 1. EXTRAER N° DE ORDEN (Busca 10 dígitos)
+                        let matchOrden = textoCompleto.match(/\b\d{10}\b/);
+                        if (matchOrden) {
+                            document.getElementById('idOrden').value = matchOrden[0];
+                        }
+
+                        // 2. EXTRAER FECHA DE EMISIÓN (Busca formato DD.MM.YYYY o similar del documento)
+                        let matchFecha = textoCompleto.match(/\b\d{2}\.\d{2}\.\d{4}\b/);
+                        if (matchFecha) {
+                            let partes = matchFecha[0].split('.');
+                            // Convertir a formato YYYY-MM-DD para el input type="date"
+                            document.getElementById('fechaCreacion').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
+                        }
+
+                        // 3. EXTRAER EQUIPO / MAQUINARIA (Busca etiquetas comunes en órdenes Petramás)
+                        let lineas = textoCompleto.split('\n');
+                        for (let i = 0; i < lineas.length; i++) {
+                            let linea = lineas[i];
+                            // Si encuentra la línea de equipo o excavadora/camión
+                            if (linea.includes('EXC-') || linea.includes('C-') || linea.includes('EQUIPO') || linea.includes('EXCAVADORA')) {
+                                // Limpiamos la etiqueta si la trae pegada
+                                let equipoTexto = linea.replace('Equipo', '').replace(':', '').trim();
+                                if(equipoTexto.length > 3) {
+                                    document.getElementById('equipo').value = equipoTexto;
+                                    break;
+                                }
+                            }
+                        }
+                        // Fallback si no halló la línea exacta: toma el texto que dice EXC-18 de tu formato
+                        if (!document.getElementById('equipo').value) {
+                            let matchExc = textoCompleto.match(/EXC-[^\n]+/);
+                            if (matchExc) {
+                                document.getElementById('equipo').value = matchExc[0].trim();
+                            }
+                        }
+
+                        // 4. DESCRIPCIÓN DEL TRABAJO (Extrae la avería o tarea general)
+                        let matchDesc = textoCompleto.match(/ROTURA DE ADAPTER|[A-Z\s]{5,25}ADAPTER|[A-Z\s]{5,30}CORRECTIVA/i);
+                        if (matchDesc) {
+                            document.getElementById('descripcion').value = matchDesc[0].trim();
+                        } else {
+                            // Si no halla el texto exacto, pone un resumen del texto detectado
+                            document.getElementById('descripcion').value = "Trabajo registrado según orden física escaneada.";
+                        }
+
+                        btn.innerHTML = '✅ ¡Datos Rellenados con Éxito!';
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-success');
+                    } else {
+                        alert('Error al procesar la imagen con la IA.');
+                        btn.innerHTML = '❌ Error';
+                    }
+                } catch (error) {
+                    console.error('Error de red:', error);
+                    alert('No se pudo conectar con el servidor.');
+                    btn.innerHTML = '❌ Error';
+                }
+
                 setTimeout(function(){
                     btn.innerHTML = textoOriginal;
-                    btn.classList.remove('btn-success');
+                    btn.classList.remove('btn-success', 'btn-primary');
                     btn.classList.add('btn-outline-primary');
                     btn.disabled = false;
                 }, 3000);
-            }, 2000); 
+            };
+
+            fileInput.click();
         });
     }
 </script>
