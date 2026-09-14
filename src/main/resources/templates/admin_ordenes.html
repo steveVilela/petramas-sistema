@@ -45,15 +45,19 @@
         </button>
     </div>
 
-    <!-- Alertas -->
-    <div th:if="${param.exito}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-        <strong>¡Orden Registrada!</strong> La orden de mantenimiento se ha guardado correctamente.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    <div th:if="${param.finalizado}" class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
-        <strong>¡Orden Finalizada!</strong> Se ha cerrado la orden y se registró la fecha de término.
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+	<!-- Alertas -->
+	    <div th:if="${param.exito}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+	        <strong>¡Orden Registrada!</strong> La orden de mantenimiento se ha guardado correctamente.
+	        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+	    </div>
+	    <div th:if="${param.repetida}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+	        <strong>¡Atención!</strong> El N° de orden ya se encuentra registrado en el sistema.
+	        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+	    </div>
+	    <div th:if="${param.finalizado}" class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+	        <strong>¡Orden Finalizada!</strong> Se ha cerrado la orden y se registró la fecha de término.
+	        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+	    </div>
 
     <!-- ========================================== -->
     <!-- FORMULARIO OCULTO (Collapse)               -->

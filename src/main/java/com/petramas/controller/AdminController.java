@@ -167,9 +167,15 @@ public class AdminController {
     public String guardarOrden(OrdenTrabajo orden, HttpSession session) {
         if (!tieneAccesoAOrdenes(session)) return "redirect:/"; 
         
+        // Verificamos si ya existe y si NO estamos en modo edición explícita
         if (ordenTrabajoRepo.existsById(orden.getIdOrden())) {
-            // Es una EDICIÓN: Conservamos los datos que no cambian si es necesario
+            // Si ya existe, validamos si el usuario solo está actualizando sus datos
             OrdenTrabajo existente = ordenTrabajoRepo.findById(orden.getIdOrden()).get();
+            
+            // Si deseas bloquear estrictamente duplicados al crear nuevos:
+            // return "redirect:/admin/ordenes?repetida";
+            
+            // De lo contrario, permitimos conservar los campos base en la edición:
             if (orden.getFechaCreacion() == null) {
                 orden.setFechaCreacion(existente.getFechaCreacion());
             }
@@ -180,7 +186,7 @@ public class AdminController {
                 orden.setFechaFinalizacion(existente.getFechaFinalizacion());
             }
         } else {
-            // Es NUEVO
+            // Es completamente NUEVO
             if (orden.getFechaCreacion() == null) {
                 orden.setFechaCreacion(java.time.LocalDate.now());
             }
@@ -192,7 +198,6 @@ public class AdminController {
         ordenTrabajoRepo.save(orden);
         return "redirect:/admin/ordenes?exito";
     }
-
 
     
  // === NUEVO MÉTODO: Finalizar Orden ===
