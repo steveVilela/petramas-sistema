@@ -213,7 +213,6 @@
 <!-- Script Mágico del Escáner IA (Demo) -->
 <!-- Script Conectado a la IA de Google Cloud Vision -->
 	<script>
-    // Función común para procesar la imagen seleccionada con Google Cloud Vision
     async function procesarImagenSeleccionada(file, botonElemento) {
         if (!file) return;
 
@@ -235,41 +234,75 @@
             if (response.ok) {
                 let data = await response.json();
                 let textoCompleto = data.join('\n');
+                console.log("Texto completo OCR:", textoCompleto); // Para depurar si es necesario
 
+                let lineas = textoCompleto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+                // 1. N° DE ORDEN: Busca cualquier número de 10 dígitos (incluso si la IA leyó algún caracter similar)
                 let matchOrden = textoCompleto.match(/\b\d{10}\b/);
                 if (matchOrden) {
                     document.getElementById('idOrden').value = matchOrden[0];
-                }
-
-                let matchFecha = textoCompleto.match(/\b\d{2}\.\d{2}\.\d{4}\b/);
-                if (matchFecha) {
-                    let partes = matchFecha[0].split('.');
-                    document.getElementById('fechaCreacion').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
-                }
-
-                let lineas = textoCompleto.split('\n');
-                for (let i = 0; i < lineas.length; i++) {
-                    let linea = lineas[i];
-                    if (linea.includes('EXC-') || linea.includes('C-') || linea.includes('EQUIPO') || linea.includes('EXCAVADORA')) {
-                        let equipoTexto = linea.replace('Equipo', '').replace(':', '').trim();
-                        if(equipoTexto.length > 3) {
-                            document.getElementById('equipo').value = equipoTexto;
-                            break;
-                        }
-                    }
-                }
-                if (!document.getElementById('equipo').value) {
-                    let matchExc = textoCompleto.match(/EXC-[^\n]+/);
-                    if (matchExc) {
-                        document.getElementById('equipo').value = matchExc[0].trim();
-                    }
-                }
-
-                let matchDesc = textoCompleto.match(/ROTURA DE ADAPTER|[A-Z\s]{5,25}ADAPTER|[A-Z\s]{5,30}CORRECTIVA/i);
-                if (matchDesc) {
-                    document.getElementById('descripcion').value = matchDesc[0].trim();
                 } else {
-                    document.getElementById('descripcion').value = "Trabajo registrado según orden física escaneada.";
+                    // Fallback: Busca cualquier secuencia larga de números
+                    let matchNumLargo = textoCompleto.match(/\b\d{8,12}\b/);
+                    if (matchNumLargo) document.getElementById('idOrden').value = matchNumLargo[0];
+                }
+
+                // 2. FECHA DE EMISIÓN: Busca formatos de fecha flexibles (DD/MM/YYYY, DD.MM.YYYY, etc.)
+                let matchFecha = textoCompleto.match(/\b\d{2}[./-]\d{2}[./-]\d{4}\b/);
+                if (matchFecha) {
+                    let fechaStr = matchFecha[0].replace(/[./-]/g, '/');
+                    let partes = fechaStr.split('/');
+                    document.getElementById('fechaCreacion').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
+                } else {
+                    // Si no halla el formato exacto, pone la fecha de hoy por defecto para no trabar el formulario
+                    let hoy = new Date().toISOString().split('T')[0];
+                    document.getElementById('fechaCreacion').value = hoy;
+                }
+
+                // 3. EQUIPO / MAQUINARIA: Busca de forma inteligente por palabras clave o códigos de máquina
+                let equipoEncontrado = "";
+                for (let i = 0; i < lineas.length; i++) {
+                    let lineaUp = lineas[i].toUpperCase();
+                    // Si la línea contiene etiquetas típicas o códigos de maquinaria
+                    if (lineaUp.includes('EXC-') || lineaUp.includes('C-282') || lineaUp.includes('CATERPILLAR') || lineaUp.includes('SHACMAN') || lineaUp.includes('EXCAVADORA')) {
+                        equipoEncontrado = lineas[i];
+                        break;
+                    }
+                }
+                
+                // Si no lo halló por línea exacta, busca por patrones generales
+                if (!equipoEncontrado) {
+                    let matchExc = textoCompleto.match(/(EXC-[A-Z0-9\s]+|C-\d+[A-Z0-9\s]+)/i);
+                    if (matchExc) equipoEncontrado = matchExc[0];
+                }
+
+                if (equipoEncontrado) {
+                    // Limpia etiquetas sobrantes si las trae pegadas
+                    let limpio = equipoEncontrado.replace(/Equipo|Maquinaria|[:]/gi, '').trim();
+                    document.getElementById('equipo').value = limpio;
+                } else {
+                    document.getElementById('equipo').value = "EQUIPO GENERAL PLANTA";
+                }
+
+                // 4. DESCRIPCIÓN DEL TRABAJO: Busca la avería o palabras de mantenimiento correctivo
+                let descEncontrada = "";
+                for (let i = 0; i < lineas.length; i++) {
+                    let lineaUp = lineas[i].toUpperCase();
+                    if (lineaUp.includes('ROTURA') || lineaUp.includes('CORRECTIVA') || lineaUp.includes('REPARACION') || lineaUp.includes('FALLA') || lineaUp.includes('ADAPTER')) {
+                        descEncontrada = lineas[i];
+                        // A veces la descripción toma la siguiente línea también
+                        if (i + 1 < lineas.length && lineas[i+1].length < 40 && !lineas[i+1].toUpperCase().includes('FECHA')) {
+                            descEncontrada += " " + lineas[i+1];
+                        }
+                        break;
+                    }
+                }
+
+                if (descEncontrada) {
+                    document.getElementById('descripcion').value = descEncontrada.trim();
+                } else {
+                    document.getElementById('descripcion').value = "Mantenimiento correctivo registrado por orden física.";
                 }
 
                 botonElemento.innerHTML = '✅ ¡Datos Rellenados!';
@@ -293,33 +326,28 @@
         }, 3000);
     }
 
-    // Botón 1: Abre DIRECTAMENTE LA CÁMARA en celulares
     const btnCamara = document.getElementById('btn-camara');
     if(btnCamara) {
         btnCamara.addEventListener('click', function() {
             let fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
-            fileInput.setAttribute('capture', 'environment'); // Fuerza cámara trasera
-            
+            fileInput.setAttribute('capture', 'environment');
             fileInput.onchange = e => procesarImagenSeleccionada(e.target.files[0], btnCamara);
             fileInput.click();
         });
     }
 
-    // Botón 2: Abre DIRECTAMENTE LA GALERÍA / ARCHIVOS
     const btnGaleria = document.getElementById('btn-galeria');
     if(btnGaleria) {
         btnGaleria.addEventListener('click', function() {
             let fileInput = document.createElement('input');
             fileInput.type = 'file';
-            fileInput.accept = 'image/*'; // Sin atributo capture, abre la galería o explorador
-            
+            fileInput.accept = 'image/*';
             fileInput.onchange = e => procesarImagenSeleccionada(e.target.files[0], btnGaleria);
             fileInput.click();
         });
     }
 </script>
-
 </body>
 </html>
