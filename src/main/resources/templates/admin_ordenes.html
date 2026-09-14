@@ -207,21 +207,24 @@
 
 <!-- Script Mágico del Escáner IA (Demo) -->
 <!-- Script Conectado a la IA de Google Cloud Vision -->
-<!-- Script Avanzado: Extracción Inteligente de Campos de la Orden -->
-<script>
-    const btnEscanear = document.getElementById('btn-escanear');
+	<scrip>
+     const btnEscanear = document.getElementById('btn-escanear');
     if(btnEscanear) {
         btnEscanear.addEventListener('click', function() {
             let fileInput = document.createElement('input');
             fileInput.type = 'file';
             fileInput.accept = 'image/*';
             
-            // ¡ESTA ES LA CLAVE! Fuerza a abrir la cámara directamente en móviles
-            fileInput.setAttribute('capture', 'environment');
+            // Eliminamos la línea de 'capture' para que el celular te dé a elegir 
+            // entre la cámara o la galería/archivos.
             
             fileInput.onchange = async e => {
                 let file = e.target.files[0];
                 if (!file) return;
+                
+                // ... el resto de tu código de fetch y procesamiento sigue igual ...
+
+	
 
                 let btn = btnEscanear;
                 let textoOriginal = btn.innerHTML;
