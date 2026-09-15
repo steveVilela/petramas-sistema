@@ -148,10 +148,14 @@ public class SoldadorController {
         long minutos = Math.round((horasNetasDia - horas) * 60);
         String totalHorasDiaFormato = String.format("%d h %02d m", horas, minutos);
         
+        // --- AQUÍ ESTÁ EL ÚNICO CAMBIO NUEVO: Convertimos a minutos totales enteros ---
+        int minutosTotalesDia = (int) Math.round(horasNetasDia * 60);
+
         model.addAttribute("nombreUsuario", usuario.getNombreApellido());
         model.addAttribute("registros", registrosDelDia);
         model.addAttribute("fechaSeleccionada", fechaSeleccionada.toString());
         model.addAttribute("totalHorasDia", totalHorasDiaFormato);
+        model.addAttribute("minutosTotalesDia", minutosTotalesDia); // <-- ¡Nuevo atributo para Thymeleaf!
         
         return "soldador_historial";
     }

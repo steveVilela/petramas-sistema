@@ -43,11 +43,25 @@
         </div>
     </div>
 
-    <!-- Indicador del Total de Horas del Día Seleccionado -->
-    <div class="alert alert-dark d-flex justify-content-between align-items-center py-2 mb-3">
-        <span class="small fw-bold">Total Neto del Día:</span>
-        <span class="badge bg-success fs-6" th:text="${totalHorasDia}">0 h 00 m</span>
-    </div>
+	<!-- Indicador del Total de Horas del Día Seleccionado -->
+	    <div class="alert alert-dark d-flex flex-column py-2 mb-3 bg-white border">
+	        <div class="d-flex justify-content-between align-items-center w-100">
+	            <span class="small fw-bold">Total Neto del Día:</span>
+	            <span class="badge bg-success fs-6" th:text="${totalHorasDia}">0 h 00 m</span>
+	        </div>
+
+	        <!-- SI EL DÍA TIENE 0 HORAS (Descanso / Libre): Muestra un aviso sutil sin alertas rojas -->
+	        <div class="mt-2 text-center text-muted small" th:if="${minutosTotalesDia != null and minutosTotalesDia == 0}">
+	            <span>🌴 Día sin registros (Descanso / Feriado)</span>
+	        </div>
+
+	        <!-- SI FALTAN HORAS (Entre 1 min y 479 min): Muestra el botón para completar el día -->
+	        <div class="mt-2 text-center" th:if="${minutosTotalesDia != null and minutosTotalesDia > 0 and minutosTotalesDia < 480}">
+	            <a th:href="@{/reporte/nuevo(fecha=${fechaSeleccionada})}" class="btn btn-primary btn-sm w-100 fw-bold">
+	                ⏰ Registrar hora faltante para completar el día
+	            </a>
+	        </div>
+	    </div>
 
     <!-- Si no hay registros en la fecha seleccionada -->
     <div th:if="${#lists.isEmpty(registros)}" class="alert.alert-warning text-center py-4 bg-white shadow-sm rounded">
