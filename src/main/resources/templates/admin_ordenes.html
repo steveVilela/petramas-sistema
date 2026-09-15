@@ -58,6 +58,10 @@
 	        <strong>¡Orden Finalizada!</strong> Se ha cerrado la orden y se registró la fecha de término.
 	        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 	    </div>
+        <div th:if="${param.reactivada}" class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+            <strong>¡Orden Reactivada!</strong> La orden ha vuelto a la lista de activas (pendientes).
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
 
     <!-- ========================================== -->
     <!-- FORMULARIO OCULTO (Collapse)               -->
@@ -192,8 +196,8 @@
                                         <div class="text-success mt-1"><strong class="text-dark">Cierre:</strong> <span th:text="${orden.fechaFinalizacion}"></span></div>
                                     </div>
                                     <div class="d-flex gap-2 mt-2 mt-md-0 align-items-center">
+                                        <a th:href="@{/admin/reactivarOrden/{id}(id=${orden.idOrden})}" class="btn btn-outline-warning btn-sm fw-bold px-2" onclick="return confirm('¿Volver a pasar esta orden a estado PENDIENTE?');">🔄 Reactivar</a>
                                         <a th:href="@{/admin/editarOrden/{id}(id=${orden.idOrden})}" class="btn btn-outline-primary btn-sm fw-bold px-3">✏️ Editar</a>
-                                        <span class="text-success fw-bold ms-2">✔ Listo</span>
                                     </div>
                                 </div>
                             </div>
@@ -280,54 +284,54 @@
                     document.getElementById('equipo').value = "EQUIPO GENERAL PLANTA";
                 }
 
-				// 4. DESCRIPCIÓN Y OPERACIONES (Limpieza estricta y combinación)
-				                let descGeneral = "";
-				                let descOperacion = "";
+                // 4. DESCRIPCIÓN Y OPERACIONES (Limpieza estricta combinando descripción y operaciones)
+                let descGeneral = "";
+                let descOperacion = "";
 
-				                for (let i = 0; i < lineas.length; i++) {
-				                    let lineaOriginal = lineas[i];
-				                    let lineaUp = lineaOriginal.toUpperCase();
-				                    
-				                    // Busca la línea que contenga "Descripción" (evitando que arrastre la etiqueta de equipo)
-				                    if ((lineaUp.includes('DESCRIPCIÓN') || lineaUp.includes('DESCRIPCION')) && !lineaUp.includes('EQUIPO')) {
-				                        let partes = lineaOriginal.split(':');
-				                        if (partes.length > 1 && partes[1].trim().length > 2) {
-				                            descGeneral = partes[1].trim();
-				                        } else if (i + 1 < lineas.length && !lineas[i+1].toUpperCase().includes('EQUIPO')) {
-				                            descGeneral = lineas[i + 1].trim();
-				                        }
-				                    }
+                for (let i = 0; i < lineas.length; i++) {
+                    let lineaOriginal = lineas[i];
+                    let lineaUp = lineaOriginal.toUpperCase();
+                    
+                    // Busca la línea que contenga "Descripción" (evitando que arrastre la etiqueta de equipo)
+                    if ((lineaUp.includes('DESCRIPCIÓN') || lineaUp.includes('DESCRIPCION')) && !lineaUp.includes('EQUIPO')) {
+                        let partes = lineaOriginal.split(':');
+                        if (partes.length > 1 && partes[1].trim().length > 2) {
+                            descGeneral = partes[1].trim();
+                        } else if (i + 1 < lineas.length && !lineas[i+1].toUpperCase().includes('EQUIPO')) {
+                            descGeneral = lineas[i + 1].trim();
+                        }
+                    }
 
-				                    // Busca la línea de operaciones (ej. "Operación 0010: ...")
-				                    if (lineaUp.includes('OPERACIÓN') || lineaUp.includes('operacion') || lineaUp.includes('Operación')) {
-				                        let partes = lineaOriginal.split(':');
-				                        if (partes.length > 1 && partes[1].trim().length > 2) {
-				                            descOperacion = partes[1].trim();
-				                        } else if (i + 1 < lineas.length) {
-				                            descOperacion = lineas[i + 1].trim();
-				                        }
-				                    }
-				                }
+                    // Busca la línea de operaciones (ej. "Operación 0010: ...")
+                    if (lineaUp.includes('OPERACIÓN') || lineaUp.includes('operacion') || lineaUp.includes('Operación')) {
+                        let partes = lineaOriginal.split(':');
+                        if (partes.length > 1 && partes[1].trim().length > 2) {
+                            descOperacion = partes[1].trim();
+                        } else if (i + 1 < lineas.length) {
+                            descOperacion = lineas[i + 1].trim();
+                        }
+                    }
+                }
 
-				                // Armamos el texto final combinando únicamente descripción y operaciones
-				                let textoFinal = "";
-				                if (descGeneral) textoFinal += descGeneral;
-				                if (descOperacion && !textoFinal.toLowerCase().includes(descOperacion.toLowerCase())) {
-				                    textoFinal += (textoFinal ? " - " : "") + descOperacion;
-				                }
+                // Armamos el texto final combinando únicamente descripción y operaciones
+                let textoFinal = "";
+                if (descGeneral) textoFinal += descGeneral;
+                if (descOperacion && !textoFinal.toLowerCase().includes(descOperacion.toLowerCase())) {
+                    textoFinal += (textoFinal ? " - " : "") + descOperacion;
+                }
 
-				                // Fallback por si acaso si no encontró las etiquetas exactas
-				                if (!textoFinal) {
-				                    for (let i = 0; i < lineas.length; i++) {
-				                        let lineaUp = lineas[i].toUpperCase();
-				                        if (lineaUp.includes('CAMBIO') || lineaUp.includes('REVISAR') || lineaUp.includes('REPARACION') || lineaUp.includes('ADAPTER')) {
-				                            textoFinal = lineas[i];
-				                            break;
-				                        }
-				                    }
-				                }
+                // Fallback por si acaso no encontró las etiquetas exactas
+                if (!textoFinal) {
+                    for (let i = 0; i < lineas.length; i++) {
+                        let lineaUp = lineas[i].toUpperCase();
+                        if (lineaUp.includes('CAMBIO') || lineaUp.includes('REVISAR') || lineaUp.includes('REPARACION') || lineaUp.includes('ADAPTER')) {
+                            textoFinal = lineas[i];
+                            break;
+                        }
+                    }
+                }
 
-				                document.getElementById('descripcion').value = textoFinal || "Mantenimiento correctivo registrado por orden física.";
+                document.getElementById('descripcion').value = textoFinal || "Mantenimiento correctivo registrado por orden física.";
 				
                 botonElemento.innerHTML = '✅ ¡Datos Rellenados!';
                 botonElemento.classList.remove('btn-primary');
