@@ -27,21 +27,21 @@
         <a th:href="@{/dashboard}" class="btn btn-outline-secondary btn-sm fw-bold">← Volver al Panel</a>
     </div>
 
-    <!-- FILTRO POR CALENDARIO -->
-    <div class="card shadow-sm border-0 mb-3">
-        <div class="card-body bg-white">
-            <form method="get" th:action="@{/historial}" class="row g-2 align-items-center">
-                <div class="col-8">
-                    <label for="fechaFiltro" class="form-label small fw-bold text-secondary mb-1">📅 Seleccionar Día:</label>
-                    <input type="date" id="fechaFiltro" name="fechaFiltro" class="form-control form-control-sm" 
-                           th:value="${fechaSeleccionada}" onchange="this.form.submit()">
-                </div>
-                <div class="col-4 text-end pt-3">
-                    <a th:href="@{/historial}" class="btn btn-outline-secondary btn-sm w-100">Hoy</a>
-                </div>
-            </form>
-        </div>
-    </div>
+	<!-- FILTRO POR CALENDARIO -->
+	    <div class="card shadow-sm border-0 mb-3">
+	        <div class="card-body bg-white">
+	            <form method="get" th:action="@{/historial}" class="row g-2 align-items-end">
+	                <div class="col-8">
+	                    <label for="fechaFiltro" class="form-label small fw-bold text-secondary mb-1">📅 Seleccionar Día:</label>
+	                    <input type="date" id="fechaFiltro" name="fechaFiltro" class="form-control form-control-sm" 
+	                           th:value="${fechaSeleccionada}" onchange="this.form.submit()">
+	                </div>
+	                <div class="col-4">
+	                    <a th:href="@{/historial}" class="btn btn-outline-secondary btn-sm w-100 fw-bold">Hoy</a>
+	                </div>
+	            </form>
+	        </div>
+	    </div>
 
 	<!-- Indicador del Total de Horas del Día Seleccionado -->
 	    <div class="alert alert-dark d-flex flex-column py-2 mb-3 bg-white border">
@@ -50,10 +50,13 @@
 	            <span class="badge bg-success fs-6" th:text="${totalHorasDia}">0 h 00 m</span>
 	        </div>
 
-	        <!-- SI EL DÍA TIENE 0 HORAS (Descanso / Libre): Muestra un aviso sutil sin alertas rojas -->
-	        <div class="mt-2 text-center text-muted small" th:if="${minutosTotalesDia != null and minutosTotalesDia == 0}">
-	            <span>🌴 Día sin registros (Descanso / Feriado)</span>
-	        </div>
+			<!-- SI EL DÍA TIENE 0 HORAS: Mensaje consultivo con opción de registrar -->
+			        <div class="mt-2 text-center" th:if="${minutosTotalesDia != null and minutosTotalesDia == 0}">
+			            <p class="text-muted small mb-2">🌴 ¿Es tu día libre o te falta registrar actividades?</p>
+			            <a th:href="@{/reporte/nuevo(fecha=${fechaSeleccionada})}" class="btn btn-outline-primary btn-sm w-100 fw-bold">
+			                ➕ Agregar actividades de este día
+			            </a>
+			        </div>
 
 	        <!-- SI FALTAN HORAS (Entre 1 min y 479 min): Muestra el botón para completar el día -->
 	        <div class="mt-2 text-center" th:if="${minutosTotalesDia != null and minutosTotalesDia > 0 and minutosTotalesDia < 480}">
