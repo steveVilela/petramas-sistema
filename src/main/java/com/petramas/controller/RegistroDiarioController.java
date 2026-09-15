@@ -6,6 +6,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+// ¡ESTA ES LA IMPORTACIÓN QUE FALTABA!
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.petramas.model.Operario;
 import com.petramas.model.RegistroDiario;
@@ -84,6 +86,7 @@ public class RegistroDiarioController {
         
         return "redirect:/dashboard"; 
     }
+
     @GetMapping("/reporte/nuevo")
     public String nuevoReporteConFecha(@RequestParam(name = "fecha", required = false) String fechaStr, 
                                       HttpSession session, Model model) {
@@ -106,6 +109,4 @@ public class RegistroDiarioController {
         
         return "registro"; 
     }
-
-    
 }
