@@ -212,7 +212,7 @@
 
 <!-- Script Mágico del Escáner IA (Demo) -->
 <!-- Script Conectado a la IA de Google Cloud Vision -->
-	<script>
+<script>
     async function procesarImagenSeleccionada(file, botonElemento) {
         if (!file) return;
 
@@ -234,76 +234,99 @@
             if (response.ok) {
                 let data = await response.json();
                 let textoCompleto = data.join('\n');
-                console.log("Texto completo OCR:", textoCompleto); // Para depurar si es necesario
+                console.log("Texto completo OCR:", textoCompleto);
 
                 let lineas = textoCompleto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-                // 1. N° DE ORDEN: Busca cualquier número de 10 dígitos (incluso si la IA leyó algún caracter similar)
+                // 1. N° DE ORDEN: Busca secuencia de 10 dígitos o número largo
                 let matchOrden = textoCompleto.match(/\b\d{10}\b/);
                 if (matchOrden) {
                     document.getElementById('idOrden').value = matchOrden[0];
                 } else {
-                    // Fallback: Busca cualquier secuencia larga de números
                     let matchNumLargo = textoCompleto.match(/\b\d{8,12}\b/);
                     if (matchNumLargo) document.getElementById('idOrden').value = matchNumLargo[0];
                 }
 
-                // 2. FECHA DE EMISIÓN: Busca formatos de fecha flexibles (DD/MM/YYYY, DD.MM.YYYY, etc.)
+                // 2. FECHA DE EMISIÓN
                 let matchFecha = textoCompleto.match(/\b\d{2}[./-]\d{2}[./-]\d{4}\b/);
                 if (matchFecha) {
                     let fechaStr = matchFecha[0].replace(/[./-]/g, '/');
                     let partes = fechaStr.split('/');
                     document.getElementById('fechaCreacion').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
                 } else {
-                    // Si no halla el formato exacto, pone la fecha de hoy por defecto para no trabar el formulario
                     let hoy = new Date().toISOString().split('T')[0];
                     document.getElementById('fechaCreacion').value = hoy;
                 }
 
-                // 3. EQUIPO / MAQUINARIA: Busca de forma inteligente por palabras clave o códigos de máquina
+                // 3. EQUIPO / MAQUINARIA
                 let equipoEncontrado = "";
                 for (let i = 0; i < lineas.length; i++) {
                     let lineaUp = lineas[i].toUpperCase();
-                    // Si la línea contiene etiquetas típicas o códigos de maquinaria
                     if (lineaUp.includes('EXC-') || lineaUp.includes('C-282') || lineaUp.includes('CATERPILLAR') || lineaUp.includes('SHACMAN') || lineaUp.includes('EXCAVADORA')) {
                         equipoEncontrado = lineas[i];
                         break;
                     }
                 }
                 
-                // Si no lo halló por línea exacta, busca por patrones generales
                 if (!equipoEncontrado) {
                     let matchExc = textoCompleto.match(/(EXC-[A-Z0-9\s]+|C-\d+[A-Z0-9\s]+)/i);
                     if (matchExc) equipoEncontrado = matchExc[0];
                 }
 
                 if (equipoEncontrado) {
-                    // Limpia etiquetas sobrantes si las trae pegadas
                     let limpio = equipoEncontrado.replace(/Equipo|Maquinaria|[:]/gi, '').trim();
                     document.getElementById('equipo').value = limpio;
                 } else {
                     document.getElementById('equipo').value = "EQUIPO GENERAL PLANTA";
                 }
 
-                // 4. DESCRIPCIÓN DEL TRABAJO: Busca la avería o palabras de mantenimiento correctivo
-                let descEncontrada = "";
+                // 4. DESCRIPCIÓN Y OPERACIONES (Captura ambas y las unifica)
+                let descGeneral = "";
+                let descOperacion = "";
+
                 for (let i = 0; i < lineas.length; i++) {
                     let lineaUp = lineas[i].toUpperCase();
-                    if (lineaUp.includes('ROTURA') || lineaUp.includes('CORRECTIVA') || lineaUp.includes('REPARACION') || lineaUp.includes('FALLA') || lineaUp.includes('ADAPTER')) {
-                        descEncontrada = lineas[i];
-                        // A veces la descripción toma la siguiente línea también
-                        if (i + 1 < lineas.length && lineas[i+1].length < 40 && !lineas[i+1].toUpperCase().includes('FECHA')) {
-                            descEncontrada += " " + lineas[i+1];
+                    
+                    // Captura la parte de Descripción de Datos Generales
+                    if (lineaUp.includes('DESCRIPCIÓN') || lineaUp.includes('DESCRIPCION')) {
+                        let partes = lineas[i].split(':');
+                        if (partes.length > 1 && partes[1].trim().length > 2) {
+                            descGeneral = partes[1].trim();
+                        } else if (i + 1 < lineas.length) {
+                            descGeneral = lineas[i + 1].trim();
                         }
-                        break;
+                    }
+
+                    // Captura la parte de Operaciones (ej. "Operación 0010: ...")
+                    if (lineaUp.includes('OPERACIÓN') || lineaUp.includes('operacion') || lineaUp.includes('Operación')) {
+                        let partes = lineas[i].split(':');
+                        if (partes.length > 1 && partes[1].trim().length > 2) {
+                            descOperacion = partes[1].trim();
+                        } else if (i + 1 < lineas.length) {
+                            descOperacion = lineas[i + 1].trim();
+                        }
                     }
                 }
 
-                if (descEncontrada) {
-                    document.getElementById('descripcion').value = descEncontrada.trim();
-                } else {
-                    document.getElementById('descripcion').value = "Mantenimiento correctivo registrado por orden física.";
+                // Armamos el texto final combinando ambas si existen
+                let textoFinal = "";
+                if (descGeneral) textoFinal += descGeneral;
+                if (descOperacion && descOperacion !== descGeneral) {
+                    textoFinal += (textoFinal ? " - " : "") + descOperacion;
                 }
+
+                // Si no encontró nada específico, busca por palabras clave comunes de avería
+                if (!textoFinal) {
+                    for (let i = 0; i < lineas.length; i++) {
+                        let lineaUp = lineas[i].toUpperCase();
+                        if (lineaUp.includes('ROTURA') || lineaUp.includes('CORRECTIVA') || lineaUp.includes('REPARACION') || lineaUp.includes('FALLA') || lineaUp.includes('ADAPTER')) {
+                            textoFinal = lineas[i];
+                            break;
+                        }
+                    }
+                }
+
+                document.getElementById('descripcion').value = textoFinal || "Mantenimiento correctivo registrado por orden física.";
 
                 botonElemento.innerHTML = '✅ ¡Datos Rellenados!';
                 botonElemento.classList.remove('btn-primary');
