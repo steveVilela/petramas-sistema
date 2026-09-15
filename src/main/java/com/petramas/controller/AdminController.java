@@ -218,5 +218,20 @@ public class AdminController {
         
         return "redirect:/admin/ordenes?finalizado";
     }
-    
+    // === NUEVO MÉTODO: Reactivar Orden (Pasar de Finalizado a Pendiente) ===
+    @GetMapping("/reactivarOrden/{idOrden}")
+    public String reactivarOrden(@PathVariable("idOrden") String idOrden, HttpSession session) {
+        if (!tieneAccesoAOrdenes(session)) return "redirect:/"; 
+        
+        if (ordenTrabajoRepo.existsById(idOrden)) {
+            OrdenTrabajo orden = ordenTrabajoRepo.findById(idOrden).get();
+            orden.setEstado("Pendiente");
+            orden.setFechaFinalizacion(null); // Borra la fecha de cierre para que vuelva a estar abierta
+            ordenTrabajoRepo.save(orden);
+        }
+        
+        return "redirect:/admin/ordenes?reactivada";
+    }
+
+
 }
