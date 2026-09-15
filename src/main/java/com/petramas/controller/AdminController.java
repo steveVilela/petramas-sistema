@@ -163,25 +163,26 @@ public class AdminController {
     }
 
     // === MÉTODO ACTUALIZADO: Permite guardar nuevo o actualizar si ya existe ===
-    @PostMapping("/guardarOrden")
+        @PostMapping("/guardarOrden")
     public String guardarOrden(OrdenTrabajo orden, HttpSession session) {
         if (!tieneAccesoAOrdenes(session)) return "redirect:/"; 
         
-        // Verificamos si ya existe y si NO estamos en modo edición explícita
+        // Verificamos si la orden ya existe en la base de datos
         if (ordenTrabajoRepo.existsById(orden.getIdOrden())) {
-            // Si ya existe, validamos si el usuario solo está actualizando sus datos
             OrdenTrabajo existente = ordenTrabajoRepo.findById(orden.getIdOrden()).get();
             
-            // Si deseas bloquear estrictamente duplicados al crear nuevos:
-            // return "redirect:/admin/ordenes?repetida";
+            // Si es una orden que YA ESTABA FINALIZADA, evitamos que la modifiquen por error o avísalo
+            if ("Finalizado".equalsIgnoreCase(existente.getEstado())) {
+                return "redirect:/admin/ordenes?repetida"; // O puedes crear un parámetro ?finalizadaRepetida
+            }
             
-            // De lo contrario, permitimos conservar los campos base en la edición:
+            // Si el usuario está actualizando una orden activa existente:
             if (orden.getFechaCreacion() == null) {
                 orden.setFechaCreacion(existente.getFechaCreacion());
             }
-            if (orden.getEstado() == null || orden.getEstado().isEmpty()) {
-                orden.setEstado(existente.getEstado());
-            }
+            // Mantiene el estado actual para que no brinque de pestaña por error
+            orden.setEstado(existente.getEstado()); 
+            
             if (orden.getFechaFinalizacion() == null) {
                 orden.setFechaFinalizacion(existente.getFechaFinalizacion());
             }
@@ -198,6 +199,7 @@ public class AdminController {
         ordenTrabajoRepo.save(orden);
         return "redirect:/admin/ordenes?exito";
     }
+
 
     
  // === NUEVO MÉTODO: Finalizar Orden ===
