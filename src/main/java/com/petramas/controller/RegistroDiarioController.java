@@ -84,4 +84,28 @@ public class RegistroDiarioController {
         
         return "redirect:/dashboard"; 
     }
+    @GetMapping("/reporte/nuevo")
+    public String nuevoReporteConFecha(@RequestParam(name = "fecha", required = false) String fechaStr, 
+                                      HttpSession session, Model model) {
+        Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
+        if (usuario == null) return "redirect:/";
+
+        RegistroDiario nuevoRegistro = new RegistroDiario();
+        
+        // Si el enlace traía una fecha seleccionada, la seteamos de una vez
+        if (fechaStr != null && !fechaStr.isEmpty()) {
+            nuevoRegistro.setFecha(java.time.LocalDate.parse(fechaStr));
+        } else {
+            nuevoRegistro.setFecha(java.time.LocalDate.now()); // Por si acaso, la de hoy
+        }
+
+        model.addAttribute("registro", nuevoRegistro);
+        model.addAttribute("ordenes", ordenRepo.findByEstado("Pendiente"));
+        model.addAttribute("usuarioActual", usuario);
+        model.addAttribute("rolUsuario", usuario.getEspecialidad());
+        
+        return "registro"; 
+    }
+
+    
 }
