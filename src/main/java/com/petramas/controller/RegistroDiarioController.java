@@ -1,4 +1,4 @@
-package com.petramas.controller;
+8package com.petramas.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -45,6 +45,69 @@ public class RegistroDiarioController {
         return "registro"; 
     }
 
+        @PostMapping("/reporte")
+    public String guardarReporte(RegistroDiario registro, 
+                                 @RequestParam(name = "dniCompanero", required = false) String dniCompanero,
+                                 HttpSession session, RedirectAttributes redirectAttributes) {
+        Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
+        if (usuario == null) return "redirect:/";
+        
+        if (registro.getHoraInicio() != null && registro.getHoraFin() != null) {
+            if (registro.getHoraFin().isBefore(registro.getHoraInicio()) || registro.getHoraFin().equals(registro.getHoraInicio())) {
+                redirectAttributes.addFlashAttribute("errorHoras", "⚠️ La hora de fin debe ser mayor a la hora de inicio (revisa si es AM o PM).");
+                return "redirect:/reporte";
+            }
+        }
+        
+        registro.setOperario(usuario);
+
+        // Validar si el registro original ya existe
+        if (registro.getIdRegistro() == null) {
+            boolean yaExiste = registroRepo.existsByOperarioAndFechaAndHoraInicioAndHoraFin(
+                usuario, registro.getFecha(), registro.getHoraInicio(), registro.getHoraFin()
+            );
+            if (yaExiste) {
+                return "redirect:/dashboard";
+            }
+        }
+        
+        // 1. Guarda el registro para ti (el usuario logueado)
+        registroRepo.save(registro);
+
+        // 2. Bloque de seguridad para guardar al compañero SIN que se caiga la app
+        try {
+            if (dniCompanero != null && !dniCompanero.trim().isEmpty()) {
+                System.out.println("Intentando agregar compañero con DNI: " + dniCompanero);
+                
+                Operario companero = operarioRepo.findById(dniCompanero.trim()).orElse(null);
+                
+                if (companero != null) {
+                    RegistroDiario registroCompanero = new RegistroDiario();
+                    
+                    // Asegurarnos de que copiamos datos limpios
+                    registroCompanero.setOperario(companero);
+                    registroCompanero.setOrdenTrabajo(registro.getOrdenTrabajo());
+                    registroCompanero.setFecha(registro.getFecha());
+                    registroCompanero.setHoraInicio(registro.getHoraInicio());
+                    registroCompanero.setHoraFin(registro.getHoraFin());
+                    registroCompanero.setActividad(registro.getActividad());
+                    
+                    registroRepo.save(registroCompanero);
+                    System.out.println("Compañero guardado exitosamente.");
+                }
+            }
+        } catch (Exception e) {
+            // Si algo explota aquí, lo captura, lo imprime en consola y NO tumba la página
+            System.err.println("ERROR GRAVE al guardar el compañero: " + e.getMessage());
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("errorHoras", "⚠️ Tu reporte se guardó, pero hubo un error al duplicarlo para tu compañero.");
+            return "redirect:/dashboard";
+        }
+        
+        return "redirect:/dashboard"; 
+    }
+
+
     @GetMapping("/reporte/editar/{id}")
     public String editarReporte(@PathVariable("id") Integer id, HttpSession session, Model model) {
         Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
@@ -67,53 +130,7 @@ public class RegistroDiarioController {
         return "registro"; 
     }
 
-    @PostMapping("/reporte")
-    public String guardarReporte(RegistroDiario registro, 
-                                 @RequestParam(name = "dniCompanero", required = false) String dniCompanero, // NUEVO
-                                 HttpSession session, RedirectAttributes redirectAttributes) {
-        Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
-        if (usuario == null) return "redirect:/";
-        
-        if (registro.getHoraInicio() != null && registro.getHoraFin() != null) {
-            if (registro.getHoraFin().isBefore(registro.getHoraInicio()) || registro.getHoraFin().equals(registro.getHoraInicio())) {
-                redirectAttributes.addFlashAttribute("errorHoras", "⚠️ La hora de fin debe ser mayor a la hora de inicio (revisa si es AM o PM).");
-                return "redirect:/reporte";
-            }
-        }
-        
-        registro.setOperario(usuario);
-
-        if (registro.getIdRegistro() == null) {
-            boolean yaExiste = registroRepo.existsByOperarioAndFechaAndHoraInicioAndHoraFin(
-                usuario, registro.getFecha(), registro.getHoraInicio(), registro.getHoraFin()
-            );
-
-            if (yaExiste) {
-                return "redirect:/dashboard";
-            }
-        }
-        
-        // 1. Guarda el registro para el usuario logueado
-        registroRepo.save(registro);
-
-        // 2. NUEVO: Si se seleccionó un compañero, duplica el registro
-        if (dniCompanero != null && !dniCompanero.isEmpty()) {
-            Operario companero = operarioRepo.findById(dniCompanero).orElse(null);
-            if (companero != null) {
-                RegistroDiario registroCompanero = new RegistroDiario();
-                registroCompanero.setOperario(companero);
-                registroCompanero.setOrdenTrabajo(registro.getOrdenTrabajo());
-                registroCompanero.setFecha(registro.getFecha());
-                registroCompanero.setHoraInicio(registro.getHoraInicio());
-                registroCompanero.setHoraFin(registro.getHoraFin());
-                registroCompanero.setActividad(registro.getActividad());
-                
-                registroRepo.save(registroCompanero);
-            }
-        }
-        
-        return "redirect:/dashboard"; 
-    }
+    
 
     @GetMapping("/reporte/nuevo")
     public String nuevoReporteConFecha(@RequestParam(name = "fecha", required = false) String fechaStr, 
