@@ -5,69 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>Mi Historial - Petramás</title>
+    <style>
+        /* Empuja el contenido hacia abajo para que la barra fija no lo tape */
+        body {
+            padding-top: 110px; 
+        }
+    </style>
 </head>
 <body class="bg-light">
 
-	<!-- Barra de Navegación Unificada Responsiva -->
-	<nav class="navbar navbar-dark bg-primary shadow-sm py-3">
-	    <div class="container-fluid flex-column align-items-start">
-	        <span class="navbar-brand mb-2 h5 text-wrap fw-bold lh-sm">
-	            Petramás | Historial de Actividades
-	        </span>
-	        <div class="d-flex justify-content-between align-items-center w-100">
-	            <span class="text-white small" th:text="'Usuario: ' + ${nombreUsuario}"></span>
-				<a th:href="@{/logout}" class="btn btn-light text-danger btn-sm fw-bold">Cerrar Sesión</a>
-			</div>
-	    </div>
-	</nav>
+    <!-- Barra de Navegación Fija (Fixed Top) -->
+    <nav class="navbar navbar-dark bg-primary shadow-sm py-2 fixed-top">
+        <div class="container-fluid flex-column align-items-stretch">
+            <!-- Fila Superior: Título de la vista y Botón Volver -->
+            <div class="d-flex justify-content-between align-items-center w-100 mb-2">
+                <span class="navbar-brand mb-0 h6 text-wrap fw-bold lh-sm">
+                    Petramás | Historial
+                </span>
+                <!-- Botón Volver integrado en la barra -->
+                <a th:href="@{/dashboard}" class="btn btn-light btn-sm fw-bold text-primary shadow-sm px-3">
+                   ← Volver
+                </a>
+            </div>
+            <!-- Fila Inferior: Usuario y Botón Cerrar Sesión -->
+            <div class="d-flex justify-content-between align-items-center w-100 mt-1">
+                <span class="text-white small fw-semibold" th:text="'👤 ' + ${nombreUsuario}"></span>
+                <a th:href="@{/logout}" class="btn btn-danger btn-sm fw-bold px-2 py-1" style="font-size: 0.85rem;">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
 
 <div class="container mt-4 mb-5">
-    <!-- Botón Volver -->
-    <div class="mb-3">
-        <a th:href="@{/dashboard}" class="btn btn-outline-secondary btn-sm fw-bold">← Volver al Panel</a>
+
+    <!-- FILTRO POR CALENDARIO Y BOTONES DE NAVEGACIÓN -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body bg-white p-3">
+            <form method="get" th:action="@{/historial}">
+                <label for="fechaFiltro" class="form-label small fw-bold text-secondary mb-2">📅 Navegar por días:</label>
+                <div class="d-flex gap-2 align-items-center justify-content-between">
+                    <!-- Botón Un día antes -->
+                    <button type="button" class="btn btn-outline-secondary fw-bold px-3 shadow-sm" onclick="cambiarDia(-1)">◀</button>
+                    
+                    <!-- Selector de fecha (Calendario) -->
+                    <input type="date" id="fechaFiltro" name="fechaFiltro" class="form-control text-center fw-bold shadow-sm" 
+                           th:value="${fechaSeleccionada}" onchange="this.form.submit()">
+                           
+                    <!-- Botón Un día después -->
+                    <button type="button" class="btn btn-outline-secondary fw-bold px-3 shadow-sm" onclick="cambiarDia(1)">▶</button>
+                    
+                    <!-- Botón Hoy -->
+                    <a th:href="@{/historial}" class="btn btn-primary fw-bold px-3 shadow-sm">Hoy</a>
+                </div>
+            </form>
+        </div>
     </div>
 
-	<!-- FILTRO POR CALENDARIO -->
-	    <div class="card shadow-sm border-0 mb-3">
-	        <div class="card-body bg-white">
-	            <form method="get" th:action="@{/historial}" class="row g-2 align-items-end">
-	                <div class="col-8">
-	                    <label for="fechaFiltro" class="form-label small fw-bold text-secondary mb-1">📅 Seleccionar Día:</label>
-	                    <input type="date" id="fechaFiltro" name="fechaFiltro" class="form-control form-control-sm" 
-	                           th:value="${fechaSeleccionada}" onchange="this.form.submit()">
-	                </div>
-	                <div class="col-4">
-	                    <a th:href="@{/historial}" class="btn btn-outline-secondary btn-sm w-100 fw-bold">Hoy</a>
-	                </div>
-	            </form>
-	        </div>
-	    </div>
+    <!-- Indicador del Total de Horas del Día Seleccionado -->
+    <div class="alert alert-dark d-flex flex-column py-2 mb-3 bg-white border">
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <span class="small fw-bold">Total Neto del Día:</span>
+            <span class="badge bg-success fs-6" th:text="${totalHorasDia}">0 h 00 m</span>
+        </div>
 
-	<!-- Indicador del Total de Horas del Día Seleccionado -->
-	    <div class="alert alert-dark d-flex flex-column py-2 mb-3 bg-white border">
-	        <div class="d-flex justify-content-between align-items-center w-100">
-	            <span class="small fw-bold">Total Neto del Día:</span>
-	            <span class="badge bg-success fs-6" th:text="${totalHorasDia}">0 h 00 m</span>
-	        </div>
+        <!-- SI EL DÍA TIENE 0 HORAS: Mensaje consultivo con opción de registrar -->
+        <div class="mt-2 text-center" th:if="${minutosTotalesDia != null and minutosTotalesDia == 0}">
+            <p class="text-muted small mb-2">🌴 ¿Es tu día libre o te falta registrar actividades?</p>
+            <a th:href="@{/reporte/nuevo(fecha=${fechaSeleccionada})}" class="btn btn-outline-primary btn-sm w-100 fw-bold">
+                ➕ Agregar actividades de este día
+            </a>
+        </div>
 
-			<!-- SI EL DÍA TIENE 0 HORAS: Mensaje consultivo con opción de registrar -->
-			        <div class="mt-2 text-center" th:if="${minutosTotalesDia != null and minutosTotalesDia == 0}">
-			            <p class="text-muted small mb-2">🌴 ¿Es tu día libre o te falta registrar actividades?</p>
-			            <a th:href="@{/reporte/nuevo(fecha=${fechaSeleccionada})}" class="btn btn-outline-primary btn-sm w-100 fw-bold">
-			                ➕ Agregar actividades de este día
-			            </a>
-			        </div>
-
-	        <!-- SI FALTAN HORAS (Entre 1 min y 479 min): Muestra el botón para completar el día -->
-	        <div class="mt-2 text-center" th:if="${minutosTotalesDia != null and minutosTotalesDia > 0 and minutosTotalesDia < 480}">
-	            <a th:href="@{/reporte/nuevo(fecha=${fechaSeleccionada})}" class="btn btn-primary btn-sm w-100 fw-bold">
-	                ⏰ Registrar hora faltante para completar el día
-	            </a>
-	        </div>
-	    </div>
+        <!-- SI FALTAN HORAS (Entre 1 min y 479 min): Muestra el botón para completar el día -->
+        <div class="mt-2 text-center" th:if="${minutosTotalesDia != null and minutosTotalesDia > 0 and minutosTotalesDia < 480}">
+            <a th:href="@{/reporte/nuevo(fecha=${fechaSeleccionada})}" class="btn btn-primary btn-sm w-100 fw-bold">
+                ⏰ Registrar hora faltante para completar el día
+            </a>
+        </div>
+    </div>
 
     <!-- Si no hay registros en la fecha seleccionada -->
-    <div th:if="${#lists.isEmpty(registros)}" class="alert.alert-warning text-center py-4 bg-white shadow-sm rounded">
+    <div th:if="${#lists.isEmpty(registros)}" class="alert alert-warning text-center py-4 bg-white shadow-sm rounded">
         No hay actividades registradas en esta fecha.
     </div>
 
@@ -100,5 +117,31 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Script para navegar entre días sumando/restando a la fecha actual -->
+<script>
+    function cambiarDia(offset) {
+        let input = document.getElementById('fechaFiltro');
+        if (!input.value) return;
+        
+        // Separa la fecha (YYYY-MM-DD) para evitar problemas de zona horaria en Javascript
+        let partes = input.value.split('-'); 
+        let fecha = new Date(partes[0], partes[1] - 1, partes[2]);
+        
+        // Suma o resta los días solicitados
+        fecha.setDate(fecha.getDate() + offset);
+        
+        // Vuelve a armar la fecha en formato YYYY-MM-DD
+        let y = fecha.getFullYear();
+        let m = String(fecha.getMonth() + 1).padStart(2, '0');
+        let d = String(fecha.getDate()).padStart(2, '0');
+        
+        input.value = `${y}-${m}-${d}`;
+        
+        // Envía el formulario automáticamente
+        input.form.submit();
+    }
+</script>
 </body>
 </html>
