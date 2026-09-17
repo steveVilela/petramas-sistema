@@ -6,14 +6,15 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-// ¡ESTA ES LA IMPORTACIÓN QUE FALTABA!
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.petramas.model.Operario;
 import com.petramas.model.RegistroDiario;
+import com.petramas.repository.OperarioRepository;
 import com.petramas.repository.OrdenTrabajoRepository;
 import com.petramas.repository.RegistroDiarioRepository;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 import jakarta.servlet.http.HttpSession;
 
 @Controller
@@ -25,6 +26,10 @@ public class RegistroDiarioController {
     @Autowired
     private RegistroDiarioRepository registroRepo;
 
+    // NUEVO: Repositorio de operarios para buscar al compañero y cargar la lista
+    @Autowired
+    private OperarioRepository operarioRepo;
+
     @GetMapping("/reporte")
     public String mostrarFormulario(HttpSession session, Model model) {
         Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
@@ -34,6 +39,8 @@ public class RegistroDiarioController {
         model.addAttribute("ordenes", ordenRepo.findByEstado("Pendiente"));
         model.addAttribute("usuarioActual", usuario);
         model.addAttribute("rolUsuario", usuario.getEspecialidad());
+        // Pasamos la lista para llenar el <select>
+        model.addAttribute("listaOperarios", operarioRepo.findAll());
         
         return "registro"; 
     }
@@ -53,13 +60,17 @@ public class RegistroDiarioController {
         model.addAttribute("ordenes", ordenRepo.findByEstado("Pendiente"));
         model.addAttribute("usuarioActual", usuario);
         model.addAttribute("rolUsuario", usuario.getEspecialidad());
+        // Pasamos la lista para llenar el <select>
+        model.addAttribute("listaOperarios", operarioRepo.findAll());
         model.addAttribute("modoEdicion", true);
         
         return "registro"; 
     }
 
     @PostMapping("/reporte")
-    public String guardarReporte(RegistroDiario registro, HttpSession session, RedirectAttributes redirectAttributes) {
+    public String guardarReporte(RegistroDiario registro, 
+                                 @RequestParam(name = "dniCompanero", required = false) String dniCompanero, // NUEVO
+                                 HttpSession session, RedirectAttributes redirectAttributes) {
         Operario usuario = (Operario) session.getAttribute("usuarioLogueado");
         if (usuario == null) return "redirect:/";
         
@@ -82,7 +93,24 @@ public class RegistroDiarioController {
             }
         }
         
+        // 1. Guarda el registro para el usuario logueado
         registroRepo.save(registro);
+
+        // 2. NUEVO: Si se seleccionó un compañero, duplica el registro
+        if (dniCompanero != null && !dniCompanero.isEmpty()) {
+            Operario companero = operarioRepo.findById(dniCompanero).orElse(null);
+            if (companero != null) {
+                RegistroDiario registroCompanero = new RegistroDiario();
+                registroCompanero.setOperario(companero);
+                registroCompanero.setOrdenTrabajo(registro.getOrdenTrabajo());
+                registroCompanero.setFecha(registro.getFecha());
+                registroCompanero.setHoraInicio(registro.getHoraInicio());
+                registroCompanero.setHoraFin(registro.getHoraFin());
+                registroCompanero.setActividad(registro.getActividad());
+                
+                registroRepo.save(registroCompanero);
+            }
+        }
         
         return "redirect:/dashboard"; 
     }
@@ -106,6 +134,8 @@ public class RegistroDiarioController {
         model.addAttribute("ordenes", ordenRepo.findByEstado("Pendiente"));
         model.addAttribute("usuarioActual", usuario);
         model.addAttribute("rolUsuario", usuario.getEspecialidad());
+        // Pasamos la lista para llenar el <select>
+        model.addAttribute("listaOperarios", operarioRepo.findAll());
         
         return "registro"; 
     }
