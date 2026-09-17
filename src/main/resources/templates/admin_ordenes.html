@@ -6,6 +6,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>Órdenes de Trabajo - Petramás</title>
     <style>
+        /* Empuja el contenido hacia abajo para que la barra fija no lo tape */
+        body {
+            padding-top: 110px; 
+        }
         /* Estilo personalizado para que la pestaña activa sea verde Petramás */
         .nav-pills .nav-link.active {
             background-color: #198754 !important; 
@@ -18,28 +22,32 @@
 </head>
 <body class="bg-light">
 
-    <!-- Barra de Navegación Unificada -->
-    <nav class="navbar navbar-dark bg-primary shadow-sm py-3">
-        <div class="container-fluid flex-column align-items-start">
-            <span class="navbar-brand mb-2 h5 text-wrap fw-bold lh-sm">
-                Petramás | Órdenes de Trabajo
-            </span>
-            <div class="d-flex justify-content-between align-items-center w-100">
-                <span class="text-white" th:text="'Usuario: ' + ${nombreAdmin}"></span>
-                <a th:href="@{/logout}" class="btn btn-light text-danger btn-sm fw-bold">Cerrar Sesión</a>
+    <!-- Barra de Navegación Fija (Fixed Top) -->
+    <nav class="navbar navbar-dark bg-primary shadow-sm py-2 fixed-top">
+        <div class="container-fluid flex-column align-items-stretch">
+            <!-- Fila Superior: Título de la vista y Botón Volver -->
+            <div class="d-flex justify-content-between align-items-center w-100 mb-2">
+                <span class="navbar-brand mb-0 h6 text-wrap fw-bold lh-sm">
+                    Petramás | Órdenes
+                </span>
+                <!-- Botón Volver integrado en la barra -->
+                <a th:href="@{${rolUsuario == 'Administrador' ? '/admin' : '/dashboard'}}" 
+                   class="btn btn-light btn-sm fw-bold text-primary shadow-sm px-3">
+                   ← Volver
+                </a>
+            </div>
+            <!-- Fila Inferior: Usuario y Botón Cerrar Sesión -->
+            <div class="d-flex justify-content-between align-items-center w-100 mt-1">
+                <span class="text-white small fw-semibold" th:text="'👤 ' + ${nombreAdmin}"></span>
+                <a th:href="@{/logout}" class="btn btn-danger btn-sm fw-bold px-2 py-1" style="font-size: 0.85rem;">Cerrar Sesión</a>
             </div>
         </div>
     </nav>
 
 <div class="container mt-4 mb-5">
     
-    <!-- HEADER: Botón Volver y Botón Nueva Orden GIGANTE para móviles -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <a th:href="@{${rolUsuario == 'Administrador' ? '/admin' : '/dashboard'}}" 
-           class="btn btn-outline-secondary btn-sm fw-bold align-self-start align-self-md-center">
-           ← Volver al Panel
-        </a>
-           
+    <!-- HEADER: Botón Nueva Orden GIGANTE para móviles (El botón volver ya está arriba) -->
+    <div class="d-flex justify-content-end mb-4">
         <button class="btn btn-success btn-lg fw-bold shadow-sm w-100 w-md-auto py-2 py-md-1 fs-6" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormulario" aria-expanded="false" aria-controls="collapseFormulario">
             ➕ Generar Nueva Orden
         </button>
@@ -215,7 +223,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Script Mágico del Escáner IA (Demo) -->
-<!-- Script Conectado a la IA de Google Cloud Vision -->
 <script>
     async function procesarImagenSeleccionada(file, botonElemento) {
         if (!file) return;
@@ -242,7 +249,6 @@
 
                 let lineas = textoCompleto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-                // 1. N° DE ORDEN: Busca secuencia de 10 dígitos o número largo
                 let matchOrden = textoCompleto.match(/\b\d{10}\b/);
                 if (matchOrden) {
                     document.getElementById('idOrden').value = matchOrden[0];
@@ -251,7 +257,6 @@
                     if (matchNumLargo) document.getElementById('idOrden').value = matchNumLargo[0];
                 }
 
-                // 2. FECHA DE EMISIÓN
                 let matchFecha = textoCompleto.match(/\b\d{2}[./-]\d{2}[./-]\d{4}\b/);
                 if (matchFecha) {
                     let fechaStr = matchFecha[0].replace(/[./-]/g, '/');
@@ -262,7 +267,6 @@
                     document.getElementById('fechaCreacion').value = hoy;
                 }
 
-                // 3. EQUIPO / MAQUINARIA
                 let equipoEncontrado = "";
                 for (let i = 0; i < lineas.length; i++) {
                     let lineaUp = lineas[i].toUpperCase();
@@ -284,7 +288,6 @@
                     document.getElementById('equipo').value = "EQUIPO GENERAL PLANTA";
                 }
 
-                // 4. DESCRIPCIÓN Y OPERACIONES (Limpieza estricta combinando descripción y operaciones)
                 let descGeneral = "";
                 let descOperacion = "";
 
@@ -292,7 +295,6 @@
                     let lineaOriginal = lineas[i];
                     let lineaUp = lineaOriginal.toUpperCase();
                     
-                    // Busca la línea que contenga "Descripción" (evitando que arrastre la etiqueta de equipo)
                     if ((lineaUp.includes('DESCRIPCIÓN') || lineaUp.includes('DESCRIPCION')) && !lineaUp.includes('EQUIPO')) {
                         let partes = lineaOriginal.split(':');
                         if (partes.length > 1 && partes[1].trim().length > 2) {
@@ -302,7 +304,6 @@
                         }
                     }
 
-                    // Busca la línea de operaciones (ej. "Operación 0010: ...")
                     if (lineaUp.includes('OPERACIÓN') || lineaUp.includes('operacion') || lineaUp.includes('Operación')) {
                         let partes = lineaOriginal.split(':');
                         if (partes.length > 1 && partes[1].trim().length > 2) {
@@ -313,14 +314,12 @@
                     }
                 }
 
-                // Armamos el texto final combinando únicamente descripción y operaciones
                 let textoFinal = "";
                 if (descGeneral) textoFinal += descGeneral;
                 if (descOperacion && !textoFinal.toLowerCase().includes(descOperacion.toLowerCase())) {
                     textoFinal += (textoFinal ? " - " : "") + descOperacion;
                 }
 
-                // Fallback por si acaso no encontró las etiquetas exactas
                 if (!textoFinal) {
                     for (let i = 0; i < lineas.length; i++) {
                         let lineaUp = lineas[i].toUpperCase();
