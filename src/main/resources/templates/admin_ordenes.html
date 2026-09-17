@@ -46,30 +46,42 @@
 
 <div class="container mt-4 mb-5">
     
-    <!-- HEADER: Botón Nueva Orden GIGANTE para móviles (El botón volver ya está arriba) -->
+    <!-- HEADER: Botón Nueva Orden GIGANTE para móviles -->
     <div class="d-flex justify-content-end mb-4">
         <button class="btn btn-success btn-lg fw-bold shadow-sm w-100 w-md-auto py-2 py-md-1 fs-6" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFormulario" aria-expanded="false" aria-controls="collapseFormulario">
             ➕ Generar Nueva Orden
         </button>
     </div>
 
-	<!-- Alertas -->
-	    <div th:if="${param.exito}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-	        <strong>¡Orden Registrada!</strong> La orden de mantenimiento se ha guardado correctamente.
-	        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-	    </div>
-	    <div th:if="${param.repetida}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-	        <strong>¡Atención!</strong> El N° de orden ya se encuentra registrado en el sistema.
-	        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-	    </div>
-	    <div th:if="${param.finalizado}" class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
-	        <strong>¡Orden Finalizada!</strong> Se ha cerrado la orden y se registró la fecha de término.
-	        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-	    </div>
-        <div th:if="${param.reactivada}" class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
-            <strong>¡Orden Reactivada!</strong> La orden ha vuelto a la lista de activas (pendientes).
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+    <!-- ========================================== -->
+    <!-- LISTADO DE ÓRDENES (Separado por Tabs)     -->
+    <!-- ========================================== -->
+    <div class="text-center mb-3">
+        <h4 class="fw-bold text-dark">Registro de Órdenes</h4>
+    </div>
+
+    <!-- NUEVO: Buscador Rápido -->
+    <div class="mb-3">
+        <input type="text" id="buscadorOrdenes" class="form-control form-control-lg rounded-pill shadow-sm fs-6" placeholder="🔍 Buscar por N° de Orden, Equipo o Descripción...">
+    </div>
+
+    <!-- Alertas -->
+    <div th:if="${param.exito}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <strong>¡Orden Registrada!</strong> La orden de mantenimiento se ha guardado correctamente.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${param.repetida}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <strong>¡Atención!</strong> El N° de orden ya se encuentra registrado en el sistema.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${param.finalizado}" class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+        <strong>¡Orden Finalizada!</strong> Se ha cerrado la orden y se registró la fecha de término.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${param.reactivada}" class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+        <strong>¡Orden Reactivada!</strong> La orden ha vuelto a la lista de activas (pendientes).
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 
     <!-- ========================================== -->
     <!-- FORMULARIO OCULTO (Collapse)               -->
@@ -122,13 +134,6 @@
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- LISTADO DE ÓRDENES (Separado por Tabs)     -->
-    <!-- ========================================== -->
-    <div class="text-center mb-3">
-        <h4 class="fw-bold text-dark">Registro de Órdenes</h4>
-    </div>
-
     <!-- Lógica de Thymeleaf BLINDADA contra listas nulas -->
     <th:block th:with="
         activas=${listaOrdenes != null ? listaOrdenes.?[estado == 'Pendiente'] : {}},
@@ -157,7 +162,9 @@
                     <strong>¡Todo al día!</strong> No hay órdenes activas pendientes en este momento.
                 </div>
                 <div class="row g-3">
-                    <div class="col-12" th:each="orden : ${activas}">
+                    
+                    <!-- En la pestaña de Activas -->
+                    <div class="col-12 orden-item" th:each="orden : ${activas}">
                         <div class="card shadow-sm border-0 border-start border-warning border-4">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -188,7 +195,9 @@
                     Aún no se han finalizado órdenes.
                 </div>
                 <div class="row g-3">
-                    <div class="col-12" th:each="orden : ${finalizadas}">
+                    
+                    <!-- Y también en la pestaña de Finalizadas -->
+                    <div class="col-12 orden-item" th:each="orden : ${finalizadas}">
                         <div class="card shadow-sm border-0 border-start border-primary border-4">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -364,6 +373,23 @@
             fileInput.click();
         });
     }
+
+    // Buscador en tiempo real para las órdenes
+    document.getElementById('buscadorOrdenes').addEventListener('keyup', function() {
+        let textoBusqueda = this.value.toLowerCase();
+        let tarjetas = document.querySelectorAll('.orden-item');
+
+        tarjetas.forEach(function(tarjeta) {
+            // Extrae todo el texto dentro de la tarjeta (N° orden, equipo, descripción)
+            let contenidoTarjeta = tarjeta.innerText.toLowerCase();
+            
+            if (contenidoTarjeta.includes(textoBusqueda)) {
+                tarjeta.style.display = ''; // Muestra la tarjeta si coincide
+            } else {
+                tarjeta.style.display = 'none'; // Oculta la tarjeta si no coincide
+            }
+        });
+    });
 
     const btnGaleria = document.getElementById('btn-galeria');
     if(btnGaleria) {
